@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useMemo, useRef, useState } from "react";
+import { ChangeEvent, ReactNode, useMemo, useRef, useState } from "react";
 
 type ContentItem = {
   id: number;
@@ -62,6 +62,343 @@ const platformStyles = {
 
 function SparkIcon() {
   return <span className="spark" aria-hidden="true">✦</span>;
+}
+
+type Notify = (message: string) => void;
+
+function ModuleHeader({
+  eyebrow,
+  title,
+  description,
+  action,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  action?: ReactNode;
+}) {
+  return (
+    <header className="module-header">
+      <div>
+        <span className="section-label">{eyebrow}</span>
+        <h1>{title}</h1>
+        <p>{description}</p>
+      </div>
+      {action}
+    </header>
+  );
+}
+
+function AudienceView({ notify }: { notify: Notify }) {
+  const [segments, setSegments] = useState([
+    { id: 1, name: "AI课程高意向新用户", count: 124, growth: "+18%", color: "violet", tags: ["新用户", "AI兴趣", "高意向"], goal: "领取试听资料" },
+    { id: 2, name: "效率敏感型职场新人", count: 186, growth: "+12%", color: "blue", tags: ["职场新人", "效率工具", "活跃"], goal: "关注课程内容" },
+    { id: 3, name: "成长驱动型职场人", count: 96, growth: "+7%", color: "mint", tags: ["职业成长", "内容活跃", "中意向"], goal: "预约课程咨询" },
+    { id: 4, name: "沉默待唤醒用户", count: 80, growth: "-3%", color: "amber", tags: ["30天未访问", "历史活跃", "低意向"], goal: "重新激活" },
+  ]);
+  const [selectedId, setSelectedId] = useState(1);
+  const [showBuilder, setShowBuilder] = useState(false);
+  const [newName, setNewName] = useState("");
+  const selected = segments.find((segment) => segment.id === selectedId) ?? segments[0];
+
+  function addSegment() {
+    if (!newName.trim()) {
+      notify("请先填写人群名称");
+      return;
+    }
+    const segment = {
+      id: Date.now(),
+      name: newName.trim(),
+      count: 0,
+      growth: "新建",
+      color: "violet",
+      tags: ["待计算", "自定义规则"],
+      goal: "待设置",
+    };
+    setSegments((current) => [...current, segment]);
+    setSelectedId(segment.id);
+    setNewName("");
+    setShowBuilder(false);
+    notify("新的人群规则已创建");
+  }
+
+  return (
+    <section className="module-page">
+      <ModuleHeader
+        eyebrow="Audience strategy"
+        title="人群策略"
+        description="把标签相似的用户组合成人群，再为每个人群匹配不同的营销目标和内容。"
+        action={<button className="module-primary" onClick={() => setShowBuilder(true)}>＋ 新建人群</button>}
+      />
+
+      <div className="module-kpis">
+        <div><span>已覆盖用户</span><strong>486</strong><small>覆盖率 100%</small></div>
+        <div><span>有效人群</span><strong>{segments.length}</strong><small>1 个需要关注</small></div>
+        <div><span>平均标签数</span><strong>6.4</strong><small>较上周 +0.8</small></div>
+        <div><span>高意向用户</span><strong>124</strong><small>占比 25.5%</small></div>
+      </div>
+
+      <div className="audience-layout">
+        <div className="module-card segment-list-card">
+          <div className="module-card-head"><div><span>人群列表</span><strong>点击查看规则与策略</strong></div><button onClick={() => notify("人群数量已重新计算")}>重新计算</button></div>
+          <div className="segment-list">
+            {segments.map((segment) => (
+              <button key={segment.id} className={`segment-item ${selectedId === segment.id ? "selected" : ""}`} onClick={() => setSelectedId(segment.id)}>
+                <span className={`segment-mark ${segment.color}`} />
+                <span className="segment-main"><strong>{segment.name}</strong><small>{segment.tags.join(" · ")}</small></span>
+                <span className="segment-size"><strong>{segment.count}</strong><small className={segment.growth.startsWith("-") ? "down" : ""}>{segment.growth}</small></span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="module-card segment-detail">
+          <div className="detail-title">
+            <div><span className={`segment-mark ${selected.color}`} /><span><small>当前人群</small><h3>{selected.name}</h3></span></div>
+            <button onClick={() => notify("规则编辑器已进入可编辑状态")}>编辑规则</button>
+          </div>
+
+          <div className="logic-box">
+            <span>满足以下全部条件</span>
+            <div className="logic-row"><b>生命周期</b><em>等于</em><strong>新用户</strong><button>×</button></div>
+            <div className="logic-row"><b>兴趣标签</b><em>包含</em><strong>AI / 效率工具</strong><button>×</button></div>
+            <div className="logic-row"><b>意向等级</b><em>等于</em><strong>高</strong><button>×</button></div>
+            <button className="add-condition" onClick={() => notify("已添加一个空白条件")}>＋ 添加条件</button>
+          </div>
+
+          <div className="strategy-summary">
+            <span>匹配的内容策略</span>
+            <div><small>营销目标</small><strong>{selected.goal}</strong></div>
+            <div><small>推荐语气</small><strong>专业、轻松、避免焦虑</strong></div>
+            <div><small>首选平台</small><strong>小红书 · 朋友圈</strong></div>
+          </div>
+          <button className="full-action" onClick={() => notify(`已为“${selected.name}”创建内容任务`)}>为这个人群生成内容 →</button>
+        </div>
+      </div>
+
+      {showBuilder && (
+        <div className="mini-modal-backdrop" onMouseDown={() => setShowBuilder(false)}>
+          <div className="mini-modal" onMouseDown={(event) => event.stopPropagation()}>
+            <button className="guide-close" onClick={() => setShowBuilder(false)}>×</button>
+            <span className="section-label">New audience</span>
+            <h2>新建自定义人群</h2>
+            <label>人群名称<input value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="例如：高意向企业客户" autoFocus /></label>
+            <label>初始规则<select defaultValue="intent"><option value="intent">意向等级等于“高”</option><option value="active">最近7天有访问</option><option value="new">生命周期等于“新用户”</option></select></label>
+            <button className="module-primary wide" onClick={addSegment}>创建并计算人数</button>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function AutomationView({ notify }: { notify: Notify }) {
+  const [tasks, setTasks] = useState([
+    { id: 1, name: "每天同步用户标签", schedule: "每天 09:00", next: "明天 09:00", enabled: true, icon: "↻", color: "violet" },
+    { id: 2, name: "生成每周内容计划", schedule: "每周一 10:00", next: "下周一 10:00", enabled: true, icon: "✦", color: "blue" },
+    { id: 3, name: "发布后效果快报", schedule: "发布 24 小时后", next: "今天 18:30", enabled: true, icon: "↗", color: "mint" },
+    { id: 4, name: "沉默用户唤醒任务", schedule: "每月 1 日", next: "8月1日 09:30", enabled: false, icon: "◎", color: "amber" },
+  ]);
+  const [runningId, setRunningId] = useState<number | null>(null);
+  const [logs, setLogs] = useState([
+    ["10:02", "每周内容计划", "生成 12 条内容，1 条需复核", "成功"],
+    ["09:00", "用户标签同步", "新增 18 条，更新 64 条", "成功"],
+    ["昨天 18:30", "效果快报", "已汇总 3 个平台数据", "成功"],
+  ]);
+
+  function toggleTask(id: number) {
+    setTasks((current) => current.map((task) => task.id === id ? { ...task, enabled: !task.enabled } : task));
+    notify("自动任务状态已更新");
+  }
+
+  function runTask(id: number, name: string) {
+    setRunningId(id);
+    window.setTimeout(() => {
+      setRunningId(null);
+      setLogs((current) => [["刚刚", name, "手动执行完成", "成功"], ...current]);
+      notify(`${name}执行完成`);
+    }, 900);
+  }
+
+  return (
+    <section className="module-page">
+      <ModuleHeader
+        eyebrow="Automation"
+        title="自动化"
+        description="让标签同步、内容生成和效果报告按计划自动执行，也可以随时手动运行。"
+        action={<button className="module-primary" onClick={() => notify("新建任务向导已准备好")}>＋ 新建自动任务</button>}
+      />
+
+      <div className="automation-summary">
+        <div><span className="pulse-dot" /><span><strong>{tasks.filter((task) => task.enabled).length} 个任务正在运行</strong><small>最近一次执行成功 · 今天 10:02</small></span></div>
+        <div><span>本月自动执行</span><strong>28 次</strong></div>
+        <div><span>节省人工时间</span><strong>约 14.5 小时</strong></div>
+      </div>
+
+      <div className="task-grid">
+        {tasks.map((task) => (
+          <article className={`task-card ${task.enabled ? "" : "disabled"}`} key={task.id}>
+            <div className="task-top">
+              <span className={`task-icon ${task.color}`}>{task.icon}</span>
+              <button className={`switch ${task.enabled ? "on" : ""}`} onClick={() => toggleTask(task.id)} aria-label={`${task.enabled ? "关闭" : "开启"}${task.name}`}><i /></button>
+            </div>
+            <h3>{task.name}</h3>
+            <p>{task.schedule}</p>
+            <div className="task-next"><span>下次执行</span><strong>{task.enabled ? task.next : "已暂停"}</strong></div>
+            <button className="run-task" onClick={() => runTask(task.id, task.name)} disabled={runningId === task.id}>{runningId === task.id ? "执行中…" : "立即运行"}</button>
+          </article>
+        ))}
+      </div>
+
+      <div className="module-card run-log">
+        <div className="module-card-head"><div><span>运行记录</span><strong>最近的自动化结果</strong></div><button onClick={() => notify("已刷新运行记录")}>刷新</button></div>
+        <div className="log-table">
+          <div className="log-row log-head"><span>时间</span><span>任务</span><span>结果</span><span>状态</span></div>
+          {logs.map((log, index) => <div className="log-row" key={`${log[0]}-${index}`}><span>{log[0]}</span><strong>{log[1]}</strong><span>{log[2]}</span><em>✓ {log[3]}</em></div>)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function KnowledgeView({ notify }: { notify: Notify }) {
+  const [tab, setTab] = useState<"语气" | "资料" | "合规">("语气");
+  const [tones, setTones] = useState(["专业但不说教", "轻松有温度", "简洁直接", "避免焦虑营销"]);
+  const [newTone, setNewTone] = useState("");
+  const [forbidden, setForbidden] = useState(["保证学会", "月薪翻倍", "全网最低", "最后名额", "绝对有效"]);
+  const [newWord, setNewWord] = useState("");
+  const [documents, setDocuments] = useState([
+    ["AI办公训练营_产品手册.pdf", "产品资料", "2.4 MB", "已解析"],
+    ["品牌语气与文案规范.docx", "品牌规范", "860 KB", "已解析"],
+    ["2026暑期活动说明.pdf", "活动规则", "1.2 MB", "已解析"],
+  ]);
+
+  function addTone() {
+    if (!newTone.trim()) return;
+    setTones((current) => [...current, newTone.trim()]);
+    setNewTone("");
+    notify("品牌语气规则已添加");
+  }
+
+  function addWord() {
+    if (!newWord.trim()) return;
+    setForbidden((current) => [...current, newWord.trim()]);
+    setNewWord("");
+    notify("禁用词已加入合规检查");
+  }
+
+  function uploadDocument(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setDocuments((current) => [[file.name, "新资料", `${Math.max(file.size / 1024, 1).toFixed(0)} KB`, "已解析"], ...current]);
+    notify("资料已加入知识库");
+  }
+
+  return (
+    <section className="module-page">
+      <ModuleHeader
+        eyebrow="Brand knowledge"
+        title="品牌知识库"
+        description="告诉系统你的品牌怎么说、产品事实是什么，以及哪些表达绝对不能出现。"
+        action={<label className="module-primary file-action">↑ 上传资料<input type="file" accept=".pdf,.doc,.docx,.txt" onChange={uploadDocument} /></label>}
+      />
+
+      <div className="knowledge-tabs">
+        {(["语气", "资料", "合规"] as const).map((item) => <button key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>{item === "语气" ? "品牌语气" : item === "资料" ? "产品资料" : "合规词库"}</button>)}
+      </div>
+
+      {tab === "语气" && (
+        <div className="knowledge-grid">
+          <div className="module-card knowledge-card">
+            <span className="section-label">Voice rules</span><h3>品牌应该怎么说话</h3><p>生成内容时，系统会同时遵守下面所有语气要求。</p>
+            <div className="tone-list">{tones.map((tone) => <span key={tone}>{tone}<button onClick={() => setTones((current) => current.filter((item) => item !== tone))}>×</button></span>)}</div>
+            <div className="inline-add"><input value={newTone} onChange={(event) => setNewTone(event.target.value)} placeholder="添加一条语气要求" /><button onClick={addTone}>添加</button></div>
+          </div>
+          <div className="module-card knowledge-card">
+            <span className="section-label">Reference copy</span><h3>参考文案</h3><p>用一段你认可的文案，帮助系统理解品牌风格。</p>
+            <textarea defaultValue="我们相信，好的工具不是让工作变复杂，而是让每个人都能把时间留给真正重要的事情。用清楚的方法，解决具体的问题。" />
+            <button className="full-action" onClick={() => notify("参考文案已保存")}>保存品牌语气</button>
+          </div>
+        </div>
+      )}
+
+      {tab === "资料" && (
+        <div className="module-card document-card">
+          <div className="module-card-head"><div><span>知识文件</span><strong>{documents.length} 份资料可供生成时引用</strong></div><label className="small-upload">＋ 添加文件<input type="file" onChange={uploadDocument} /></label></div>
+          <div className="document-list">
+            {documents.map((doc) => <div key={doc[0]}><span className="doc-icon">文</span><span><strong>{doc[0]}</strong><small>{doc[1]} · {doc[2]}</small></span><em>✓ {doc[3]}</em><button onClick={() => setDocuments((current) => current.filter((item) => item[0] !== doc[0]))}>删除</button></div>)}
+          </div>
+        </div>
+      )}
+
+      {tab === "合规" && (
+        <div className="knowledge-grid">
+          <div className="module-card knowledge-card">
+            <span className="section-label">Forbidden words</span><h3>禁用表达</h3><p>出现这些表达时，系统会阻止内容进入发布队列。</p>
+            <div className="forbidden-list">{forbidden.map((word) => <span key={word}>! {word}<button onClick={() => setForbidden((current) => current.filter((item) => item !== word))}>×</button></span>)}</div>
+            <div className="inline-add"><input value={newWord} onChange={(event) => setNewWord(event.target.value)} placeholder="输入新的禁用词" /><button onClick={addWord}>加入</button></div>
+          </div>
+          <div className="module-card compliance-card">
+            <span className="shield">✓</span><h3>合规检查运行正常</h3><p>当前启用 {forbidden.length} 个自定义禁用词，并检查夸大承诺、隐私信息和活动有效期。</p>
+            <div><span>隐私信息检查</span><strong>已开启</strong></div><div><span>事实依据检查</span><strong>已开启</strong></div><div><span>平台敏感词</span><strong>已开启</strong></div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function InsightsView({ notify }: { notify: Notify }) {
+  const [period, setPeriod] = useState<"7天" | "30天" | "90天">("30天");
+  const multiplier = period === "7天" ? 0.3 : period === "90天" ? 2.6 : 1;
+  const number = (value: number) => Math.round(value * multiplier).toLocaleString("zh-CN");
+
+  return (
+    <section className="module-page">
+      <ModuleHeader
+        eyebrow="Performance insights"
+        title="效果洞察"
+        description="比较不同平台、人群和文案的表现，找出下一批内容应该继续采用的策略。"
+        action={<div className="period-filter">{(["7天", "30天", "90天"] as const).map((item) => <button key={item} className={period === item ? "active" : ""} onClick={() => setPeriod(item)}>{item}</button>)}</div>}
+      />
+
+      <div className="insight-kpis">
+        <div><span>总曝光</span><strong>{number(286400)}</strong><small>↗ 18.6%</small></div>
+        <div><span>内容点击</span><strong>{number(18420)}</strong><small>↗ 12.4%</small></div>
+        <div><span>咨询转化</span><strong>{number(846)}</strong><small>↗ 9.8%</small></div>
+        <div><span>平均点击率</span><strong>6.43%</strong><small>↗ 0.7%</small></div>
+      </div>
+
+      <div className="insight-grid">
+        <div className="module-card chart-card">
+          <div className="module-card-head"><div><span>平台表现</span><strong>点击率与转化率</strong></div><button onClick={() => notify("洞察数据已刷新")}>刷新</button></div>
+          <div className="bar-chart">
+            {[["小红书", 84, "7.8%", "red"], ["朋友圈", 66, "6.1%", "green"], ["公众号", 52, "4.9%", "blue"]].map(([name, width, value, color]) => (
+              <div className="bar-row" key={name}><span>{name}</span><div><i className={String(color)} style={{ width: `${width}%` }} /></div><strong>{value}</strong></div>
+            ))}
+          </div>
+          <div className="chart-insight"><SparkIcon /><p><strong>小红书是当前最有效的平台</strong>，点击率高于公众号 2.9 个百分点，建议下一批增加场景型标题。</p></div>
+        </div>
+
+        <div className="module-card donut-card">
+          <div className="module-card-head"><div><span>转化来源</span><strong>按重点人群划分</strong></div></div>
+          <div className="donut-wrap"><div className="donut"><span><strong>846</strong><small>总咨询</small></span></div><div className="donut-legend"><span><i className="violet" />高意向新用户 <b>42%</b></span><span><i className="blue" />职场新人 <b>31%</b></span><span><i className="mint" />成长型用户 <b>19%</b></span><span><i className="gray" />其他 <b>8%</b></span></div></div>
+        </div>
+      </div>
+
+      <div className="module-card ranking-card">
+        <div className="module-card-head"><div><span>高表现内容</span><strong>本周期综合排名</strong></div><button onClick={() => notify("完整报告将在下一步提供下载")}>下载报告</button></div>
+        <div className="ranking-table">
+          <div className="rank-row rank-head"><span>排名</span><span>内容</span><span>平台</span><span>目标人群</span><span>点击率</span><span>咨询</span></div>
+          {[
+            ["01", "每天少加1小时班，我用AI重做了工作流", "小红书", "职场新人", "9.2%", "286"],
+            ["02", "让工具替你加班，而不是让自己硬撑", "朋友圈", "高意向新用户", "8.4%", "214"],
+            ["03", "AI办公不是学工具，而是重构工作方式", "公众号", "成长型用户", "6.8%", "148"],
+          ].map((row) => <div className="rank-row" key={row[0]}><b>{row[0]}</b><strong>{row[1]}</strong><span>{row[2]}</span><span>{row[3]}</span><em>{row[4]}</em><span>{row[5]}</span></div>)}
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export default function Home() {
@@ -200,6 +537,12 @@ export default function Home() {
   }
 
   const navItems = ["内容工作台", "人群策略", "自动化", "品牌知识库", "效果洞察"];
+  const navCounts: Record<string, string> = {
+    "内容工作台": "12",
+    "人群策略": "4",
+    "自动化": "3",
+    "品牌知识库": "8",
+  };
 
   return (
     <div className="app-shell">
@@ -218,16 +561,13 @@ export default function Home() {
             <button
               key={item}
               className={`nav-item ${activeNav === item ? "active" : ""}`}
-              onClick={() => {
-                setActiveNav(item);
-                if (item !== "内容工作台") showToast(`${item}将在下一版本开放`);
-              }}
+              onClick={() => setActiveNav(item)}
             >
               <span className="nav-icon" aria-hidden="true">
                 {["◫", "◎", "↯", "◇", "↗"][index]}
               </span>
               {item}
-              {item === "内容工作台" && <span className="nav-count">12</span>}
+              {navCounts[item] && <span className="nav-count">{navCounts[item]}</span>}
             </button>
           ))}
         </nav>
@@ -248,6 +588,8 @@ export default function Home() {
       </aside>
 
       <main className="main">
+        {activeNav === "内容工作台" ? (
+        <>
         <header className="topbar">
           <div>
             <div className="title-line">
@@ -451,9 +793,19 @@ export default function Home() {
           <span><i /> 自动化任务运行正常</span>
           <span>下一次标签同步：明天 09:00</span>
         </footer>
+        </>
+        ) : activeNav === "人群策略" ? (
+          <AudienceView notify={showToast} />
+        ) : activeNav === "自动化" ? (
+          <AutomationView notify={showToast} />
+        ) : activeNav === "品牌知识库" ? (
+          <KnowledgeView notify={showToast} />
+        ) : (
+          <InsightsView notify={showToast} />
+        )}
       </main>
 
-      {showGuide && (
+      {showGuide && activeNav === "内容工作台" && (
         <div className="guide-backdrop" role="presentation" onMouseDown={() => setShowGuide(false)}>
           <section
             className="guide-modal"
