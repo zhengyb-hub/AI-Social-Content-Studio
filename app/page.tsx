@@ -71,6 +71,9 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [uploadedRows, setUploadedRows] = useState(486);
   const [fileName, setFileName] = useState("用户标签_0727.csv");
+  const [hasCustomData, setHasCustomData] = useState(false);
+  const [hasGenerated, setHasGenerated] = useState(false);
+  const [showGuide, setShowGuide] = useState(true);
   const [toast, setToast] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -100,6 +103,7 @@ export default function Home() {
       const rowCount = Math.max(lines.length - 1, 0);
       setUploadedRows(rowCount);
       setFileName(file.name);
+      setHasCustomData(true);
       showToast(`已读取 ${rowCount} 条标签记录`);
     };
     reader.readAsText(file);
@@ -116,9 +120,27 @@ export default function Home() {
           status: "待审核",
         })),
       );
+      setHasGenerated(true);
       setIsGenerating(false);
       showToast("已生成 3 个平台的内容方案");
     }, 1200);
+  }
+
+  function downloadTemplate() {
+    const template = [
+      ["user_id", "audience_tag", "interest", "lifecycle", "intent_level", "recommended_product"],
+      ["U001", "职场新人", "AI与效率工具", "新用户", "高", "AI办公训练营"],
+      ["U002", "小企业主", "获客增长", "活跃用户", "中", "营销自动化服务"],
+    ];
+    const csv = template.map((row) => row.join(",")).join("\n");
+    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "EchoFlow_用户标签模板.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+    showToast("标签模板已下载");
   }
 
   function approveItem(id: number) {
@@ -228,23 +250,32 @@ export default function Home() {
       <main className="main">
         <header className="topbar">
           <div>
-            <span className="eyebrow">内容工作台</span>
-            <h1>早上好，Yubo <span aria-hidden="true">👋</span></h1>
+            <div className="title-line">
+              <span className="eyebrow">内容工作台</span>
+              <span className="demo-badge">功能演示版</span>
+            </div>
+            <h1>把用户标签变成社交媒体文案</h1>
           </div>
           <div className="top-actions">
             <span className="sync-status"><i /> 标签已同步 · 2分钟前</span>
-            <button className="icon-button" aria-label="通知">●</button>
+            <button className="help-button" onClick={() => setShowGuide(true)}>？ 使用说明</button>
             <button className="primary-button" onClick={generateContent} disabled={isGenerating}>
               <SparkIcon /> {isGenerating ? "正在生成…" : "生成本周内容"}
             </button>
           </div>
         </header>
 
-        <section className="hero-card">
+        <section className="hero-card guide-hero">
           <div className="hero-copy">
-            <span className="hero-kicker"><SparkIcon /> 标签驱动 · 自动生成 · 可控审核</span>
-            <h2>把标签变成内容，<br />把内容变成增长。</h2>
-            <p>系统已识别 4 个重点人群，预计可生成 12 条适配内容。</p>
+            <span className="hero-kicker"><SparkIcon /> 第一次使用？照着下面 3 步操作</span>
+            <h2>上传标签 → 自动生成 → 审核导出</h2>
+            <p>不用写提示词。准备一份用户标签表，系统会按人群和平台生成不同文案。</p>
+            <div className="hero-buttons">
+              <button className="hero-primary" onClick={() => fileRef.current?.click()}>
+                {hasCustomData ? "更换标签文件" : "第 1 步：上传标签 CSV"} <span>→</span>
+              </button>
+              <button className="hero-secondary" onClick={downloadTemplate}>下载标签模板</button>
+            </div>
           </div>
           <div className="hero-orbit" aria-hidden="true">
             <div className="orbit orbit-one" />
@@ -255,24 +286,23 @@ export default function Home() {
             <span className="float-tag tag-three">效率工具</span>
           </div>
           <div className="hero-stats">
-            <div><strong>486</strong><span>已同步用户</span></div>
+            <div><strong>{uploadedRows}</strong><span>{hasCustomData ? "你的用户记录" : "示例用户"}</span></div>
             <div><strong>4</strong><span>重点人群</span></div>
             <div><strong>{averageScore}</strong><span>平均质量分</span></div>
           </div>
         </section>
 
-        <section className="workflow-strip" aria-label="自动化流程">
+        <section className="workflow-strip clearer" aria-label="三步操作流程">
           {[
-            ["01", "标签同步", "486条已就绪"],
-            ["02", "策略匹配", "4个人群"],
-            ["03", "内容生成", "3个平台"],
-            ["04", "智能质检", "1条需复核"],
-            ["05", "审核发布", `${approved}/3 已通过`],
-          ].map(([step, title, detail], index) => (
-            <div className="workflow-step" key={step}>
-              <span className={`step-number ${index < 4 ? "done" : ""}`}>{index < 4 ? "✓" : step}</span>
-              <span><strong>{title}</strong><small>{detail}</small></span>
-              {index < 4 && <b aria-hidden="true">→</b>}
+            ["1", "上传标签表", hasCustomData ? `${uploadedRows} 条已读取` : "可先使用示例数据", hasCustomData],
+            ["2", "确认生成策略", "目标、平台与品牌语气", true],
+            ["3", "生成并审核", hasGenerated ? "内容已生成" : "点击按钮自动生成", hasGenerated],
+            ["4", "导出结果", approved > 0 ? `${approved} 条已通过` : "审核通过后导出", approved > 0],
+          ].map(([step, title, detail, done], index) => (
+            <div className={`workflow-step ${done ? "completed" : ""}`} key={String(step)}>
+              <span className={`step-number ${done ? "done" : ""}`}>{done ? "✓" : step}</span>
+              <span><strong>{title}</strong><small>{String(detail)}</small></span>
+              {index < 3 && <b aria-hidden="true">→</b>}
             </div>
           ))}
         </section>
@@ -281,10 +311,16 @@ export default function Home() {
           <section className="panel strategy-panel">
             <div className="panel-heading">
               <div>
-                <span className="section-label">输入与策略</span>
-                <h3>本周自动化任务</h3>
+                <span className="section-label">第 1～2 步</span>
+                <h3>准备标签与生成规则</h3>
               </div>
-              <button className="ghost-button" onClick={() => showToast("自动化规则已启用")}>编辑规则</button>
+              <button className="ghost-button" onClick={() => setShowGuide(true)}>看示例</button>
+            </div>
+
+            <div className="explain-box">
+              <strong>你需要准备什么？</strong>
+              <p>每行代表一个用户，至少包含“用户ID”和“人群标签”。兴趣、生命周期、意向等级越完整，文案越准确。</p>
+              <div><code>user_id</code><code>audience_tag</code><code>interest</code><code>intent_level</code></div>
             </div>
 
             <button className="upload-card" onClick={() => fileRef.current?.click()}>
@@ -301,13 +337,13 @@ export default function Home() {
                 <strong>{fileName}</strong>
                 <small>{uploadedRows} 条记录 · 点击替换 CSV</small>
               </span>
-              <em>已同步</em>
+              <em>{hasCustomData ? "你的数据" : "示例数据"}</em>
             </button>
 
             <div className="rule-block">
               <div className="rule-title">
                 <span className="rule-icon purple" aria-hidden="true">◎</span>
-                <span><strong>目标人群</strong><small>由标签规则自动聚类</small></span>
+                <span><strong>系统会先把相似用户分组</strong><small>避免给每个用户机械地生成一条文案</small></span>
               </div>
               <div className="chips">
                 <span>职场新人 <b>186</b></span>
@@ -320,7 +356,7 @@ export default function Home() {
             <div className="rule-row">
               <div className="rule-title">
                 <span className="rule-icon amber" aria-hidden="true">↗</span>
-                <span><strong>营销目标</strong><small>促成首次咨询</small></span>
+                <span><strong>这批内容要实现什么目标？</strong><small>当前选择：促成首次咨询</small></span>
               </div>
               <span className="rule-value">领取试听资料</span>
             </div>
@@ -328,7 +364,7 @@ export default function Home() {
             <div className="rule-row">
               <div className="rule-title">
                 <span className="rule-icon blue" aria-hidden="true">◫</span>
-                <span><strong>发布平台</strong><small>按平台特性改写</small></span>
+                <span><strong>准备发布到哪里？</strong><small>同一卖点会按平台特性改写</small></span>
               </div>
               <div className="platform-dots">
                 <span className="red">书</span><span className="green">圈</span><span className="blue">号</span>
@@ -342,7 +378,7 @@ export default function Home() {
 
             <button className="generate-button" onClick={generateContent} disabled={isGenerating}>
               <SparkIcon />
-              <span><strong>{isGenerating ? "正在生成并质检…" : "智能生成内容"}</strong><small>预计生成 12 条 · 约 20 秒</small></span>
+              <span><strong>{isGenerating ? "正在生成并质检…" : "第 3 步：生成多平台文案"}</strong><small>当前演示会生成 3 条 · 接入模型后可批量生成</small></span>
               <b aria-hidden="true">→</b>
             </button>
           </section>
@@ -350,8 +386,9 @@ export default function Home() {
           <section className="panel review-panel">
             <div className="panel-heading review-heading">
               <div>
-                <span className="section-label">审核队列</span>
-                <h3>待处理内容 <sup>{items.filter((item) => item.status === "待审核").length}</sup></h3>
+                <span className="section-label">第 4 步</span>
+                <h3>检查并通过文案 <sup>{items.filter((item) => item.status === "待审核").length}</sup></h3>
+                <p className="heading-help">检查标题、正文和风险提示；满意后点击“通过”，最后导出。</p>
               </div>
               <div className="review-actions">
                 <button className="ghost-button" onClick={exportCsv}>导出</button>
@@ -415,6 +452,59 @@ export default function Home() {
           <span>下一次标签同步：明天 09:00</span>
         </footer>
       </main>
+
+      {showGuide && (
+        <div className="guide-backdrop" role="presentation" onMouseDown={() => setShowGuide(false)}>
+          <section
+            className="guide-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="guide-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button className="guide-close" onClick={() => setShowGuide(false)} aria-label="关闭使用说明">×</button>
+            <span className="guide-kicker"><SparkIcon /> 60 秒看懂 EchoFlow</span>
+            <h2 id="guide-title">这个工具到底做什么？</h2>
+            <p className="guide-lead">它把你的用户标签表，自动变成针对不同人群、适合不同平台的宣传文案。</p>
+
+            <div className="example-flow">
+              <div className="example-card input-example">
+                <span>你提供的标签</span>
+                <strong>职场新人</strong>
+                <div><i>兴趣：AI效率</i><i>阶段：新用户</i><i>意向：高</i></div>
+              </div>
+              <span className="flow-arrow" aria-hidden="true">→</span>
+              <div className="example-card strategy-example">
+                <span>系统自动判断</span>
+                <strong>推广 AI 办公课程</strong>
+                <div><i>目标：领取试听</i><i>语气：专业轻松</i></div>
+              </div>
+              <span className="flow-arrow" aria-hidden="true">→</span>
+              <div className="example-card output-example">
+                <span>你得到的结果</span>
+                <strong>3 个平台文案</strong>
+                <div><i>小红书</i><i>朋友圈</i><i>公众号</i></div>
+              </div>
+            </div>
+
+            <div className="guide-steps">
+              <div><b>1</b><span><strong>上传 CSV 标签表</strong><small>不知道格式可下载模板</small></span></div>
+              <div><b>2</b><span><strong>确认目标和平台</strong><small>系统已提供默认策略</small></span></div>
+              <div><b>3</b><span><strong>生成、审核、导出</strong><small>逐条通过后导出 CSV</small></span></div>
+            </div>
+
+            <div className="demo-notice">
+              <span>i</span>
+              <p><strong>当前是功能演示版</strong>：页面使用示例数据和内置生成逻辑。接入大模型 API 后，才会根据你每次上传的标签真正生成新文案。</p>
+            </div>
+
+            <div className="guide-actions">
+              <button className="guide-template" onClick={downloadTemplate}>先下载标签模板</button>
+              <button className="guide-start" onClick={() => setShowGuide(false)}>用示例数据开始体验 →</button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {toast && <div className="toast" role="status"><span>✓</span>{toast}</div>}
     </div>

@@ -276,6 +276,21 @@ button {
   letter-spacing: -0.8px;
 }
 
+.title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.demo-badge {
+  padding: 4px 7px;
+  border-radius: 7px;
+  color: #6759d9;
+  background: #ece9ff;
+  font-size: 8px;
+  font-weight: 800;
+}
+
 .top-actions {
   gap: 10px;
 }
@@ -297,6 +312,7 @@ button {
 }
 
 .icon-button,
+.help-button,
 .ghost-button,
 .approve-all,
 .sort-button {
@@ -310,6 +326,15 @@ button {
   border-radius: 11px;
   color: #767887;
   font-size: 7px;
+}
+
+.help-button {
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
+  color: #696b78;
+  font-size: 9px;
+  font-weight: 700;
 }
 
 .primary-button {
@@ -381,6 +406,41 @@ button:disabled {
   margin: 0;
   color: #aeb0c3;
   font-size: 11px;
+}
+
+.guide-hero {
+  min-height: 238px;
+}
+
+.hero-buttons {
+  margin-top: 20px;
+  display: flex;
+  gap: 9px;
+}
+
+.hero-buttons button {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.hero-primary {
+  border: 0;
+  color: #292259;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+
+.hero-primary span {
+  margin-left: 7px;
+}
+
+.hero-secondary {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #d7d4ed;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .hero-orbit {
@@ -475,7 +535,7 @@ button:disabled {
   border-radius: 16px;
   background: #fff;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
 }
 
 .workflow-step {
@@ -483,6 +543,18 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.workflow-step.completed strong {
+  color: #3c3e4d;
+}
+
+.workflow-strip.clearer {
+  padding: 16px 20px;
+}
+
+.workflow-strip.clearer .workflow-step {
+  padding-right: 20px;
 }
 
 .workflow-step b {
@@ -568,6 +640,14 @@ button:disabled {
   font-size: 9px;
 }
 
+.heading-help {
+  max-width: 340px;
+  margin: 6px 0 0;
+  color: #999ba7;
+  font-size: 8px;
+  line-height: 1.5;
+}
+
 .ghost-button,
 .approve-all {
   height: 31px;
@@ -586,6 +666,39 @@ button:disabled {
   color: var(--ink);
   background: #faf9ff;
   text-align: left;
+}
+
+.explain-box {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f6f5ff;
+}
+
+.explain-box strong {
+  font-size: 10px;
+}
+
+.explain-box p {
+  margin: 5px 0 9px;
+  color: #767887;
+  font-size: 8px;
+  line-height: 1.6;
+}
+
+.explain-box div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.explain-box code {
+  padding: 4px 6px;
+  border: 1px solid #e3e0ff;
+  border-radius: 6px;
+  color: #6556cf;
+  background: #fff;
+  font-size: 7px;
 }
 
 .upload-card input {
@@ -1059,6 +1172,241 @@ button:disabled {
   background: #3cbc8a;
 }
 
+.guide-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  padding: 24px;
+  background: rgba(16, 17, 28, 0.64);
+  backdrop-filter: blur(8px);
+  display: grid;
+  place-items: center;
+}
+
+.guide-modal {
+  width: min(760px, 100%);
+  max-height: calc(100vh - 48px);
+  position: relative;
+  overflow: auto;
+  padding: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 35px 90px rgba(14, 15, 28, 0.28);
+  animation: guide-in 240ms ease-out;
+}
+
+.guide-close {
+  width: 32px;
+  height: 32px;
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  border: 0;
+  border-radius: 9px;
+  color: #858793;
+  background: #f2f2f5;
+  font-size: 18px;
+}
+
+.guide-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--purple);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.guide-modal h2 {
+  margin: 10px 0 6px;
+  font-size: 25px;
+  letter-spacing: -0.8px;
+}
+
+.guide-lead {
+  margin: 0;
+  color: #737582;
+  font-size: 11px;
+}
+
+.example-flow {
+  margin: 24px 0 20px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.example-card {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #e9e9ef;
+  border-radius: 14px;
+  background: #fafafd;
+}
+
+.example-card > span,
+.example-card > strong {
+  display: block;
+}
+
+.example-card > span {
+  color: #9294a0;
+  font-size: 8px;
+}
+
+.example-card > strong {
+  margin: 6px 0 9px;
+  font-size: 11px;
+}
+
+.example-card div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.example-card i {
+  padding: 4px 6px;
+  border-radius: 6px;
+  color: #6f7180;
+  background: #ededf2;
+  font-size: 7px;
+  font-style: normal;
+}
+
+.strategy-example {
+  border-color: #ddd9ff;
+  background: #f6f4ff;
+}
+
+.strategy-example i {
+  color: #6458c7;
+  background: #e9e5ff;
+}
+
+.output-example {
+  border-color: #d6eee4;
+  background: #f3fbf7;
+}
+
+.output-example i {
+  color: #2f8665;
+  background: #e2f5ec;
+}
+
+.flow-arrow {
+  align-self: center;
+  color: #a2a4ae;
+  font-size: 15px;
+}
+
+.guide-steps {
+  padding: 16px;
+  border: 1px solid #ededf2;
+  border-radius: 15px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.guide-steps > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.guide-steps b {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  color: #fff;
+  background: var(--purple);
+  font-size: 9px;
+}
+
+.guide-steps strong,
+.guide-steps small {
+  display: block;
+}
+
+.guide-steps strong {
+  font-size: 9px;
+}
+
+.guide-steps small {
+  margin-top: 3px;
+  color: #9a9ca7;
+  font-size: 7px;
+}
+
+.demo-notice {
+  margin-top: 14px;
+  padding: 11px 13px;
+  border-radius: 12px;
+  color: #735b2b;
+  background: #fff8e8;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.demo-notice > span {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  color: #fff;
+  background: #dda749;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.demo-notice p {
+  margin: 0;
+  font-size: 8px;
+  line-height: 1.6;
+}
+
+.guide-actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.guide-actions button {
+  height: 38px;
+  padding: 0 15px;
+  border-radius: 10px;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.guide-template {
+  border: 1px solid #e3e3e9;
+  color: #696b78;
+  background: #fff;
+}
+
+.guide-start {
+  border: 0;
+  color: #fff;
+  background: var(--purple);
+  box-shadow: 0 10px 22px rgba(102, 87, 232, 0.2);
+}
+
+@keyframes guide-in {
+  from { transform: translateY(12px) scale(0.98); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
 @keyframes toast-in {
   from { transform: translateY(8px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
@@ -1158,6 +1506,10 @@ button:disabled {
     display: none;
   }
 
+  .help-button {
+    display: none;
+  }
+
   .hero-card {
     min-height: 240px;
     padding: 26px 24px;
@@ -1171,7 +1523,7 @@ button:disabled {
 
   .workflow-strip {
     padding: 10px;
-    grid-template-columns: repeat(5, minmax(62px, 1fr));
+    grid-template-columns: repeat(4, minmax(82px, 1fr));
     overflow-x: auto;
   }
 
@@ -1213,5 +1565,35 @@ button:disabled {
 
   .footer-note {
     gap: 12px;
+  }
+
+  .guide-backdrop {
+    padding: 10px;
+  }
+
+  .guide-modal {
+    padding: 26px 18px 20px;
+    border-radius: 18px;
+  }
+
+  .example-flow {
+    grid-template-columns: 1fr;
+  }
+
+  .flow-arrow {
+    transform: rotate(90deg);
+    justify-self: center;
+  }
+
+  .guide-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-actions {
+    flex-direction: column-reverse;
+  }
+
+  .guide-actions button {
+    width: 100%;
   }
 }
