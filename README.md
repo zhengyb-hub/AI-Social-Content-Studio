@@ -1,98 +1,74 @@
-# vinext-starter
+# EchoFlow AI 内容运营台
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+一个根据用户标签批量生成小红书、朋友圈和公众号宣传文案的内容运营工具。
 
-## Prerequisites
+[在线体验 EchoFlow](https://echoflow-ai-content-studio.zhengyb2839144.chatgpt.site)
 
-- Node.js `>=22.13.0`
+> 在线站点目前采用私有访问策略，可能需要使用已获授权的 ChatGPT 账号登录。仓库公开不代表站点数据公开。
 
-## Quick Start
+![EchoFlow 产品预览](public/og.png)
+
+## 能做什么
+
+- 上传 CSV 用户标签表，并读取用户数量
+- 按相似标签自动展示人群分组
+- 为小红书、朋友圈和公众号生成差异化文案
+- 提供精简、标准、深度三种文案模式
+- 展开、编辑、重写和审核单条内容
+- 批量通过并导出 CSV
+- 保存内容、人群策略、自动化任务和知识库状态
+- 展示数据连接与运营洞察页面
+
+## 当前状态
+
+这是可交互的产品原型，页面操作、审核、导出和云端状态保存已经可用。
+
+文案生成目前采用内置演示逻辑，尚未接入真实大模型 API；上传的标签用于演示数据读取流程，不会触发真实的个性化模型生成。后续可接入 OpenAI API、CRM 和各社交平台发布接口。
+
+## 本地运行
+
+环境要求：Node.js `>=22.13.0`
 
 ```bash
 npm install
 npm run dev
+```
+
+打开终端提示的本地地址即可使用。
+
+生产构建与测试：
+
+```bash
 npm run build
+npm test
 ```
 
-This starter does not use `wrangler.jsonc`.
+## 技术栈
 
-## Included Shape
+- React 19
+- Next.js 16
+- vinext / Vite
+- Cloudflare D1
+- Drizzle ORM
+- OpenAI Sites
 
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
+## 数据结构
 
-## Workspace Auth Headers
+应用使用 D1 的 `workspace_state` 表保存各模块的 JSON 状态。表结构位于 `db/schema.ts`，迁移文件位于 `drizzle/`。
 
-OpenAI workspace sites can read the current user's email from
-`oai-authenticated-user-email`.
+## 主要目录
 
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
+```text
+app/                 页面、样式和状态 API
+db/                  D1 数据库访问与表结构
+drizzle/             数据库迁移
+public/              图标和预览图
+tests/               构建结果测试
+.openai/hosting.json Sites 项目绑定
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+## 安全说明
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
-
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
-
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
-
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
-
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
-
-## Useful Commands
-
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
-
-## Learn More
-
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+- `.env*`、构建目录、缓存和依赖目录已通过 `.gitignore` 排除
+- 请勿把模型 API Key 或平台密钥直接写入源码
+- 生产密钥应配置在部署平台的环境变量中
