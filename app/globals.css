@@ -2013,6 +2013,415 @@ button:disabled {
   background: #eaf8f2;
 }
 
+/* Readability refresh: larger type, calmer spacing, and clearer content cards. */
+body {
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.main {
+  max-width: 1580px;
+  padding: 34px 44px 28px;
+}
+
+.topbar {
+  margin-bottom: 28px;
+}
+
+.topbar h1 {
+  font-size: 30px;
+}
+
+.eyebrow,
+.section-label,
+.demo-badge,
+.sync-status,
+.help-button {
+  font-size: 12px;
+}
+
+.primary-button {
+  min-height: 44px;
+  font-size: 14px;
+}
+
+.hero-card {
+  min-height: 238px;
+  padding: 36px 42px;
+}
+
+.hero-kicker {
+  font-size: 13px;
+}
+
+.hero-copy p {
+  max-width: 620px;
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.hero-buttons button,
+.float-tag {
+  font-size: 12px;
+}
+
+.hero-stats span {
+  font-size: 12px;
+}
+
+.workflow-strip {
+  margin: 22px 0;
+  padding: 18px 22px;
+}
+
+.workflow-step {
+  gap: 12px;
+}
+
+.step-number {
+  width: 34px;
+  height: 34px;
+  font-size: 13px;
+}
+
+.workflow-step strong {
+  font-size: 14px;
+}
+
+.workflow-step small {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.content-grid {
+  grid-template-columns: minmax(330px, 0.8fr) minmax(520px, 1.55fr);
+  gap: 24px;
+}
+
+.strategy-panel,
+.review-panel {
+  padding: 28px;
+}
+
+.panel-heading {
+  margin-bottom: 22px;
+}
+
+.panel-heading h3 {
+  font-size: 21px;
+}
+
+.panel-heading h3 sup {
+  min-width: 24px;
+  height: 24px;
+  font-size: 12px;
+}
+
+.heading-help {
+  max-width: 480px;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.ghost-button,
+.approve-all {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 12px;
+}
+
+.explain-box,
+.upload-card,
+.rule-block,
+.rule-row,
+.depth-selector {
+  padding: 16px;
+}
+
+.explain-box strong,
+.upload-card strong,
+.rule-title strong {
+  font-size: 14px;
+}
+
+.explain-box p,
+.upload-card small,
+.rule-title small {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.explain-box code,
+.chips span,
+.upload-card em,
+.rule-value,
+.platform-dots span,
+.depth-options button {
+  font-size: 12px;
+}
+
+.rule-icon {
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+}
+
+.platform-dots span {
+  width: 30px;
+  height: 30px;
+}
+
+.depth-options button {
+  min-width: 48px;
+  height: 32px;
+}
+
+.guardrail {
+  padding: 13px 15px;
+}
+
+.guardrail strong,
+.generate-button strong {
+  font-size: 14px;
+}
+
+.guardrail small,
+.generate-button small {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.generate-button {
+  min-height: 66px;
+  padding: 0 18px;
+}
+
+.filter-row {
+  padding-bottom: 16px;
+  gap: 8px;
+}
+
+.filter-row button {
+  min-height: 34px;
+  padding: 7px 12px;
+  font-size: 12px;
+}
+
+.content-list {
+  max-height: 650px;
+  margin: 0 -8px;
+  padding: 12px 8px 4px;
+  background: #f8f8fb;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.content-card {
+  padding: 18px;
+  border: 1px solid #e8e8ef;
+  border-radius: 14px;
+  background: #fff;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: 15px;
+  box-shadow: 0 5px 18px rgba(29, 30, 46, 0.035);
+}
+
+.content-card:last-child {
+  border-bottom: 1px solid #e8e8ef;
+}
+
+.platform-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.content-meta {
+  gap: 7px;
+  font-size: 12px;
+}
+
+.version {
+  padding: 3px 7px;
+}
+
+.content-card h4 {
+  margin: 9px 0 7px;
+  font-size: 17px;
+  line-height: 1.45;
+}
+
+.content-card p.copy-text {
+  color: #666977;
+  font-size: 14px;
+  line-height: 1.85;
+  -webkit-line-clamp: 5;
+}
+
+.expand-copy {
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.content-footer {
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.content-footer > span {
+  padding: 5px 8px;
+  font-size: 11px;
+}
+
+.card-actions {
+  gap: 7px;
+}
+
+.card-actions button {
+  height: 34px;
+  font-size: 12px;
+}
+
+.rewrite {
+  width: 34px;
+  font-size: 16px !important;
+}
+
+.edit-copy,
+.approve {
+  min-width: 52px;
+  padding: 0 11px;
+}
+
+.empty-state strong {
+  font-size: 15px;
+}
+
+.empty-state span,
+.footer-note {
+  font-size: 12px;
+}
+
+.module-header h1 {
+  font-size: 32px;
+}
+
+.module-header p {
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.module-primary {
+  min-height: 42px;
+  font-size: 13px;
+}
+
+.module-kpis span,
+.insight-kpis span,
+.module-kpis small,
+.insight-kpis small,
+.module-card-head strong,
+.module-card-head > button,
+.small-upload {
+  font-size: 12px;
+}
+
+.module-card-head span {
+  font-size: 15px;
+}
+
+.segment-main strong,
+.strategy-summary strong,
+.document-list strong {
+  font-size: 14px;
+}
+
+.segment-main small,
+.segment-size small,
+.detail-title small,
+.logic-box > span,
+.strategy-summary > span,
+.strategy-summary small,
+.automation-summary span,
+.automation-summary small,
+.task-card p,
+.task-next span,
+.task-next strong,
+.log-row,
+.knowledge-tabs button,
+.knowledge-card > p,
+.compliance-card > p,
+.tone-list > span,
+.forbidden-list > span,
+.document-list small,
+.document-list em,
+.compliance-card > div,
+.period-filter button,
+.bar-row,
+.chart-insight p,
+.donut small,
+.donut-legend span,
+.rank-row,
+.readiness-steps span,
+.save-indicator,
+.compact-save {
+  font-size: 12px;
+}
+
+.logic-row,
+.add-condition,
+.full-action,
+.mini-modal label,
+.mini-modal input,
+.mini-modal select,
+.run-task,
+.inline-add input,
+.inline-add button,
+.knowledge-card textarea,
+.document-list button {
+  font-size: 13px;
+}
+
+.task-card h3,
+.knowledge-card h3,
+.compliance-card h3 {
+  font-size: 17px;
+}
+
+.log-row,
+.rank-row {
+  min-height: 54px;
+}
+
+.guide-lead,
+.example-card > strong,
+.guide-steps strong,
+.demo-notice p,
+.guide-actions button {
+  font-size: 13px;
+}
+
+.example-card > span,
+.example-card i,
+.guide-steps small {
+  font-size: 12px;
+}
+
+.copy-editor label > span,
+.copy-editor input,
+.copy-editor textarea,
+.copy-editor-actions button {
+  font-size: 13px;
+}
+
+.copy-editor textarea {
+  line-height: 1.8;
+}
+
 @keyframes toast-in {
   from { transform: translateY(8px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
@@ -2122,15 +2531,15 @@ button:disabled {
   .sidebar .nav-item {
     width: auto;
     min-width: max-content;
-    height: 34px;
-    padding: 0 10px;
+    height: 40px;
+    padding: 0 13px;
     justify-content: flex-start;
-    font-size: 8px;
+    font-size: 13px;
   }
 
   .sidebar .nav-icon {
     width: auto;
-    font-size: 12px;
+    font-size: 16px;
   }
 
   .sidebar .nav-count {
@@ -2138,7 +2547,7 @@ button:disabled {
   }
 
   .main {
-    padding: 20px 16px;
+    padding: 22px 16px 28px;
   }
 
   .topbar {
@@ -2194,17 +2603,49 @@ button:disabled {
   }
 
   .content-card {
-    grid-template-columns: 30px minmax(0, 1fr);
+    padding: 16px;
+    grid-template-columns: 36px minmax(0, 1fr);
   }
 
   .platform-icon {
-    width: 30px;
-    height: 30px;
+    width: 36px;
+    height: 36px;
   }
 
   .card-actions {
     grid-column: 2;
     justify-content: flex-end;
+  }
+
+  .topbar h1 {
+    font-size: 26px;
+  }
+
+  .hero-copy h2 {
+    font-size: 30px;
+  }
+
+  .strategy-panel,
+  .review-panel {
+    padding: 20px;
+  }
+
+  .depth-selector,
+  .rule-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .depth-options {
+    width: 100%;
+  }
+
+  .depth-options button {
+    flex: 1;
+  }
+
+  .content-card h4 {
+    white-space: normal;
   }
 
   .footer-note {
