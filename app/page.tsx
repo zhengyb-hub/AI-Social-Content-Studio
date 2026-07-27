@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, ReactNode, useMemo, useRef, useState } from "react";
+import { ChangeEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 type ContentItem = {
   id: number;
@@ -66,6 +66,53 @@ function SparkIcon() {
 
 type Notify = (message: string) => void;
 
+function useDurableState<T>(key: string, initialValue: T) {
+  const [value, setValue] = useState<T>(initialValue);
+  const [status, setStatus] = useState<"loading" | "saved" | "error">("loading");
+  const loaded = useRef(false);
+
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/state?key=${encodeURIComponent(key)}`)
+      .then((response) => {
+        if (!response.ok) throw new Error("Unable to load state");
+        return response.json() as Promise<{ value: T | null }>;
+      })
+      .then((payload) => {
+        if (!active) return;
+        if (payload.value !== null) setValue(payload.value);
+        loaded.current = true;
+        setStatus("saved");
+      })
+      .catch(() => {
+        if (!active) return;
+        loaded.current = true;
+        setStatus("error");
+      });
+    return () => { active = false; };
+  }, [key]);
+
+  useEffect(() => {
+    if (!loaded.current) return;
+    setStatus("loading");
+    const timer = window.setTimeout(() => {
+      fetch("/api/state", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key, value }),
+      })
+        .then((response) => {
+          if (!response.ok) throw new Error("Unable to save state");
+          setStatus("saved");
+        })
+        .catch(() => setStatus("error"));
+    }, 450);
+    return () => window.clearTimeout(timer);
+  }, [key, value]);
+
+  return [value, setValue, status] as const;
+}
+
 function ModuleHeader({
   eyebrow,
   title,
@@ -90,7 +137,7 @@ function ModuleHeader({
 }
 
 function AudienceView({ notify }: { notify: Notify }) {
-  const [segments, setSegments] = useState([
+  const [segments, setSegments, saveStatus] = useDurableState("audience-segments", [
     { id: 1, name: "AI课程高意向新用户", count: 124, growth: "+18%", color: "violet", tags: ["新用户", "AI兴趣", "高意向"], goal: "领取试听资料" },
     { id: 2, name: "效率敏感型职场新人", count: 186, growth: "+12%", color: "blue", tags: ["职场新人", "效率工具", "活跃"], goal: "关注课程内容" },
     { id: 3, name: "成长驱动型职场人", count: 96, growth: "+7%", color: "mint", tags: ["职业成长", "内容活跃", "中意向"], goal: "预约课程咨询" },
@@ -130,6 +177,7 @@ function AudienceView({ notify }: { notify: Notify }) {
         description="把标签相似的用户组合成人群，再为每个人群匹配不同的营销目标和内容。"
         action={<button className="module-primary" onClick={() => setShowBuilder(true)}>＋ 新建人群</button>}
       />
+      <div className={`save-indicator ${saveStatus}`}>{saveStatus === "saved" ? "✓ 人群策略已保存" : saveStatus === "error" ? "! 暂时无法保存" : "正在保存…"}</div>
 
       <div className="module-kpis">
         <div><span>已覆盖用户</span><strong>486</strong><small>覆盖率 100%</small></div>
@@ -193,14 +241,14 @@ function AudienceView({ notify }: { notify: Notify }) {
 }
 
 function AutomationView({ notify }: { notify: Notify }) {
-  const [tasks, setTasks] = useState([
+  const [tasks, setTasks, taskSaveStatus] = useDurableState("automation-tasks", [
     { id: 1, name: "每天同步用户标签", schedule: "每天 09:00", next: "明天 09:00", enabled: true, icon: "↻", color: "violet" },
     { id: 2, name: "生成每周内容计划", schedule: "每周一 10:00", next: "下周一 10:00", enabled: true, icon: "✦", color: "blue" },
     { id: 3, name: "发布后效果快报", schedule: "发布 24 小时后", next: "今天 18:30", enabled: true, icon: "↗", color: "mint" },
     { id: 4, name: "沉默用户唤醒任务", schedule: "每月 1 日", next: "8月1日 09:30", enabled: false, icon: "◎", color: "amber" },
   ]);
   const [runningId, setRunningId] = useState<number | null>(null);
-  const [logs, setLogs] = useState([
+  const [logs, setLogs] = useDurableState("automation-logs", [
     ["10:02", "每周内容计划", "生成 12 条内容，1 条需复核", "成功"],
     ["09:00", "用户标签同步", "新增 18 条，更新 64 条", "成功"],
     ["昨天 18:30", "效果快报", "已汇总 3 个平台数据", "成功"],
@@ -228,6 +276,7 @@ function AutomationView({ notify }: { notify: Notify }) {
         description="让标签同步、内容生成和效果报告按计划自动执行，也可以随时手动运行。"
         action={<button className="module-primary" onClick={() => notify("新建任务向导已准备好")}>＋ 新建自动任务</button>}
       />
+      <div className={`save-indicator ${taskSaveStatus}`}>{taskSaveStatus === "saved" ? "✓ 自动任务已保存" : taskSaveStatus === "error" ? "! 暂时无法保存" : "正在保存…"}</div>
 
       <div className="automation-summary">
         <div><span className="pulse-dot" /><span><strong>{tasks.filter((task) => task.enabled).length} 个任务正在运行</strong><small>最近一次执行成功 · 今天 10:02</small></span></div>
@@ -263,11 +312,11 @@ function AutomationView({ notify }: { notify: Notify }) {
 
 function KnowledgeView({ notify }: { notify: Notify }) {
   const [tab, setTab] = useState<"语气" | "资料" | "合规">("语气");
-  const [tones, setTones] = useState(["专业但不说教", "轻松有温度", "简洁直接", "避免焦虑营销"]);
+  const [tones, setTones, knowledgeSaveStatus] = useDurableState("brand-tones", ["专业但不说教", "轻松有温度", "简洁直接", "避免焦虑营销"]);
   const [newTone, setNewTone] = useState("");
-  const [forbidden, setForbidden] = useState(["保证学会", "月薪翻倍", "全网最低", "最后名额", "绝对有效"]);
+  const [forbidden, setForbidden] = useDurableState("forbidden-words", ["保证学会", "月薪翻倍", "全网最低", "最后名额", "绝对有效"]);
   const [newWord, setNewWord] = useState("");
-  const [documents, setDocuments] = useState([
+  const [documents, setDocuments] = useDurableState("knowledge-documents", [
     ["AI办公训练营_产品手册.pdf", "产品资料", "2.4 MB", "已解析"],
     ["品牌语气与文案规范.docx", "品牌规范", "860 KB", "已解析"],
     ["2026暑期活动说明.pdf", "活动规则", "1.2 MB", "已解析"],
@@ -302,6 +351,7 @@ function KnowledgeView({ notify }: { notify: Notify }) {
         description="告诉系统你的品牌怎么说、产品事实是什么，以及哪些表达绝对不能出现。"
         action={<label className="module-primary file-action">↑ 上传资料<input type="file" accept=".pdf,.doc,.docx,.txt" onChange={uploadDocument} /></label>}
       />
+      <div className={`save-indicator ${knowledgeSaveStatus}`}>{knowledgeSaveStatus === "saved" ? "✓ 品牌规则已保存" : knowledgeSaveStatus === "error" ? "! 暂时无法保存" : "正在保存…"}</div>
 
       <div className="knowledge-tabs">
         {(["语气", "资料", "合规"] as const).map((item) => <button key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>{item === "语气" ? "品牌语气" : item === "资料" ? "产品资料" : "合规词库"}</button>)}
@@ -401,8 +451,84 @@ function InsightsView({ notify }: { notify: Notify }) {
   );
 }
 
+function ConnectionsView({ notify }: { notify: Notify }) {
+  const [testValue, setTestValue, saveStatus] = useDurableState("connection-test", {
+    checks: 0,
+    lastChecked: "尚未测试",
+  });
+
+  function testDatabase() {
+    const now = new Date().toLocaleString("zh-CN", { hour12: false });
+    setTestValue({ checks: testValue.checks + 1, lastChecked: now });
+    notify("已发送数据库保存测试");
+  }
+
+  return (
+    <section className="module-page">
+      <ModuleHeader
+        eyebrow="Connections"
+        title="数据与模型连接"
+        description="集中查看这个工具真正连接了哪些服务，避免把演示功能误认为已经接入生产系统。"
+      />
+
+      <div className="connection-banner">
+        <span className="connection-shield">✓</span>
+        <span><strong>云端保存已启用</strong><small>人群、自动任务、品牌规则和审核结果会在刷新后保留。</small></span>
+        <em className={saveStatus}>{saveStatus === "saved" ? "运行正常" : saveStatus === "error" ? "连接异常" : "检查中"}</em>
+      </div>
+
+      <div className="connection-grid">
+        <article className="connection-card connected">
+          <div><span className="connector-icon">库</span><em>已连接</em></div>
+          <h3>云端数据库</h3>
+          <p>保存人群、任务、知识库规则和内容审核状态。</p>
+          <dl><div><dt>保存范围</dt><dd>整个私有工作区</dd></div><div><dt>上次测试</dt><dd>{testValue.lastChecked}</dd></div></dl>
+          <button onClick={testDatabase}>测试保存能力</button>
+        </article>
+
+        <article className="connection-card partial">
+          <div><span className="connector-icon">表</span><em>可用</em></div>
+          <h3>CSV 标签数据</h3>
+          <p>支持手动导入标签表；自动读取 CRM 尚未配置。</p>
+          <dl><div><dt>当前方式</dt><dd>手动上传 CSV</dd></div><div><dt>数据映射</dt><dd>6 个标准字段</dd></div></dl>
+          <button onClick={() => notify("请回到内容工作台上传 CSV 文件")}>前往导入标签</button>
+        </article>
+
+        <article className="connection-card waiting">
+          <div><span className="connector-icon">AI</span><em>待连接</em></div>
+          <h3>大模型生成服务</h3>
+          <p>当前仍使用内置规则演示；需要配置服务端密钥后才能生成真实新文案。</p>
+          <dl><div><dt>推荐模型</dt><dd>OpenAI GPT 系列</dd></div><div><dt>密钥位置</dt><dd>仅保存在服务器</dd></div></dl>
+          <button onClick={() => notify("模型密钥需要在服务器端安全配置")}>查看接入要求</button>
+        </article>
+
+        <article className="connection-card waiting">
+          <div><span className="connector-icon">发</span><em>待连接</em></div>
+          <h3>社交媒体发布</h3>
+          <p>当前可导出审核结果，尚未直接连接平台发布接口。</p>
+          <dl><div><dt>当前方式</dt><dd>导出 CSV</dd></div><div><dt>建议顺序</dt><dd>先审批，再排期</dd></div></dl>
+          <button onClick={() => notify("发布接口将在模型接入后继续开发")}>查看发布计划</button>
+        </article>
+      </div>
+
+      <div className="module-card readiness-card">
+        <div className="module-card-head"><div><span>产品就绪度</span><strong>从演示版到真实运营工具</strong></div><b>62%</b></div>
+        <div className="readiness-body">
+          <div className="readiness-track"><i style={{ width: "62%" }} /></div>
+          <div className="readiness-steps">
+            <span className="done">✓ 完整操作界面</span>
+            <span className="done">✓ 云端状态保存</span>
+            <span>3 接入真实大模型</span>
+            <span>4 连接 CRM 与发布平台</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
-  const [items, setItems] = useState(initialItems);
+  const [items, setItems, contentSaveStatus] = useDurableState("content-items", initialItems);
   const [activeNav, setActiveNav] = useState("内容工作台");
   const [filter, setFilter] = useState<"全部" | "待审核" | "已通过">("全部");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -536,12 +662,13 @@ export default function Home() {
     showToast("审核结果已导出");
   }
 
-  const navItems = ["内容工作台", "人群策略", "自动化", "品牌知识库", "效果洞察"];
+  const navItems = ["内容工作台", "人群策略", "自动化", "品牌知识库", "数据连接", "效果洞察"];
   const navCounts: Record<string, string> = {
     "内容工作台": "12",
     "人群策略": "4",
     "自动化": "3",
     "品牌知识库": "8",
+    "数据连接": "2",
   };
 
   return (
@@ -564,7 +691,7 @@ export default function Home() {
               onClick={() => setActiveNav(item)}
             >
               <span className="nav-icon" aria-hidden="true">
-                {["◫", "◎", "↯", "◇", "↗"][index]}
+                {["◫", "◎", "↯", "◇", "⌁", "↗"][index]}
               </span>
               {item}
               {navCounts[item] && <span className="nav-count">{navCounts[item]}</span>}
@@ -599,6 +726,7 @@ export default function Home() {
             <h1>把用户标签变成社交媒体文案</h1>
           </div>
           <div className="top-actions">
+            <span className={`compact-save ${contentSaveStatus}`}>{contentSaveStatus === "saved" ? "✓ 已保存" : contentSaveStatus === "error" ? "! 保存失败" : "保存中…"}</span>
             <span className="sync-status"><i /> 标签已同步 · 2分钟前</span>
             <button className="help-button" onClick={() => setShowGuide(true)}>？ 使用说明</button>
             <button className="primary-button" onClick={generateContent} disabled={isGenerating}>
@@ -800,6 +928,8 @@ export default function Home() {
           <AutomationView notify={showToast} />
         ) : activeNav === "品牌知识库" ? (
           <KnowledgeView notify={showToast} />
+        ) : activeNav === "数据连接" ? (
+          <ConnectionsView notify={showToast} />
         ) : (
           <InsightsView notify={showToast} />
         )}
