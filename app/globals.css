@@ -850,6 +850,9 @@ button:disabled {
 .platform-dots .red, .platform-icon.red { background: #ff5c63; }
 .platform-dots .green, .platform-icon.green { background: #28b978; }
 .platform-dots .blue, .platform-icon.blue { background: #4e8df5; }
+.platform-dots .black, .platform-icon.black { background: linear-gradient(145deg, #292b35, #111218); }
+.platform-dots .teal, .platform-icon.teal { background: #20aa9a; }
+.platform-dots .orange, .platform-icon.orange { background: #f28b35; }
 
 .depth-selector {
   margin-top: 13px;

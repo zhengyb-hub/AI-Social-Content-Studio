@@ -4,8 +4,8 @@ import { ChangeEvent, ReactNode, useEffect, useMemo, useRef, useState } from "re
 
 type ContentItem = {
   id: number;
-  platform: "小红书" | "朋友圈" | "公众号";
-  platformKey: "red" | "green" | "blue";
+  platform: "小红书" | "朋友圈" | "公众号" | "抖音" | "视频号" | "微博";
+  platformKey: "red" | "green" | "blue" | "black" | "teal" | "orange";
   title: string;
   body: string;
   audience: string;
@@ -60,6 +60,48 @@ const copyLibrary: Record<ContentItem["platform"], Record<CopyDepth, { title: st
       body: "很多人已经会让AI写邮件、做摘要、改文案，但忙碌感并没有真正下降。问题往往不在工具能力，而在使用方式：我们把AI当成随用随开的聊天窗口，却没有让它进入稳定的工作流程。\n\n真正有效的AI办公，至少要完成三次转变。\n\n01｜从“想到才用”变成识别高频任务\n先回看一个真实工作日：哪些动作每周都会出现，规则相对固定，又持续消耗时间？会议纪要、资料归纳、日报汇总、初步数据分析，通常比复杂决策更适合作为起点。不要一次改造所有工作，先选一个能明确衡量前后差异的场景。\n\n02｜从“帮我生成”变成定义输入与输出\n一条可靠流程需要说明材料来源、目标对象、输出格式和检查标准。例如处理会议内容时，不只要求“总结”，而是固定输出核心结论、待办事项、负责人、截止时间和待确认信息。标准越清楚，结果越稳定，也越容易交给团队复用。\n\n03｜从“相信结果”变成人机协作复核\nAI可以加速整理和表达，但事实、数字、对外承诺与敏感信息仍需人工确认。把复核点设计在流程里，才能同时获得效率和安全，而不是用新的返工替代旧的重复劳动。\n\n一套工作流是否有效，可以用三个问题检验：是否减少了重复输入？输出是否能直接进入下一环节？出现错误时能否快速定位？如果答案都是“是”，AI才真正成为生产力的一部分。\n\n我们整理了邮件、表格、会议纪要和汇报输出四类常见场景的模板与检查清单。想从自己的第一个高频任务开始，可领取试听资料，按清单完成一次工作流改造。",
     },
   },
+  抖音: {
+    精简: {
+      title: "3个AI动作，每天少忙1小时",
+      body: "【3秒开场】你每天加班，可能不是工作难，而是重复动作太多。\n\n会议结束让AI提取待办，写日报按固定模板汇总，看长资料先抓事实和风险。先改一个高频任务，坚持7天，你会明显感觉工作轻了。\n\n想要完整模板，评论区打「效率」。",
+    },
+    标准: {
+      title: "别再乱学AI了，先改掉这3个低效动作",
+      body: "【开场】收藏了很多AI工具，为什么还是天天加班？因为你学的是功能，不是工作流。\n\n【镜头一】会议结束，把录音交给AI，固定输出结论、负责人和截止时间。\n\n【镜头二】下班写日报，把当天任务按完成、阻塞、明日计划自动归纳。\n\n【镜头三】看长资料，先提取关键事实和风险点，再回原文核对。\n\n记住：输入格式固定，关键内容人工复核。先连续用一周，再决定要不要学更多工具。\n\n需要这3套提示词模板，评论区打「效率」，我整理给你。",
+    },
+    深度: {
+      title: "为什么你用了AI，还是每天加班？",
+      body: "【0—3秒｜正面近景】\n为什么你用了AI，还是每天加班？因为你只是偶尔问它问题，没有把它放进工作流程。\n\n【4—12秒｜会议画面】\n第一个场景：会议纪要。别再从头听录音，固定让AI输出核心结论、待办事项、负责人和截止时间，你只负责核对事实。\n\n【13—22秒｜电脑操作】\n第二个场景：日报汇总。把当天聊天记录和任务进度放进同一个模板，按完成事项、结果数据、阻塞问题和明日计划整理。\n\n【23—32秒｜资料翻页】\n第三个场景：长资料阅读。先提取事实、风险和待确认项，再带着问题回看原文，不是少看，而是看得更准。\n\n【33—42秒｜总结字幕】\n真正有效的AI办公只有两条原则：输入格式要固定，重要结果必须人工检查。先选一个每天重复的任务，坚持使用7天，比一次学10个工具更有效。\n\n【结尾行动】\n我把这3套工作流做成了可直接套用的模板。评论区打「效率」，领取完整清单。\n\n#AI办公 #职场效率 #打工人 #工作流",
+    },
+  },
+  视频号: {
+    精简: {
+      title: "AI办公的关键，不是会提问",
+      body: "会让AI写一封邮件，不等于真正提高效率。先找到重复任务，再固定输入、输出和人工复核点，工具才能稳定进入工作。想领取常见办公场景模板，留言「工作流」。",
+    },
+    标准: {
+      title: "AI办公真正的分水岭：有没有形成工作流",
+      body: "很多人已经尝试用AI写邮件、做总结，但工作量并没有明显减少。关键区别在于：你是在临时使用一个工具，还是已经建立了一条可重复的流程。\n\n先从会议纪要、日报整理或资料分析中选择一个高频任务，明确输入材料、输出格式和复核标准，连续实践一周。只要结果能直接进入下一环节，效率提升才算真正发生。\n\n我们整理了4类办公场景模板，留言「工作流」即可领取。",
+    },
+    深度: {
+      title: "学会AI工具之后，为什么工作还是没有变轻？",
+      body: "很多职场人已经会用AI写邮件、做总结、整理表格，但使用一段时间后，工作量并没有明显减少。原因是我们把AI当成了临时助手，而没有把它设计成流程中的稳定环节。\n\n判断一条AI工作流是否有效，可以看三个标准。\n\n第一，输入是否固定。每次都临时解释背景，效率很难稳定。应该明确材料来源、目标对象和必要上下文。\n\n第二，输出是否可直接使用。会议内容要形成结论、负责人和截止时间；资料分析要给出事实、风险和下一步，而不只是泛泛总结。\n\n第三，是否保留人工复核。数字、事实、承诺和敏感表达必须回到原始材料确认，效率不能以失去判断为代价。\n\n建议从一个每天都会出现的任务开始，连续执行7天，记录前后用时和返工次数。能减少重复输入、顺畅进入下一环节，才是真正的生产力提升。\n\n我们把会议、邮件、表格和汇报4类场景整理成了模板与检查清单。需要的朋友留言「工作流」，从第一条流程开始实践。",
+    },
+  },
+  微博: {
+    精简: {
+      title: "用了AI还加班？问题可能不在工具",
+      body: "真正省时间的不是再收藏一个AI工具，而是把高频任务变成固定流程：明确输入、规定输出、保留复核。先从会议纪要或日报开始，坚持一周再看变化。想要模板，评论留「效率」。#AI办公# #职场效率#",
+    },
+    标准: {
+      title: "为什么用了AI，工作却没有明显变轻？",
+      body: "不少人会用AI写邮件、做摘要，但依然忙得停不下来。原因往往是“偶尔使用”，没有形成可重复的工作流。\n\n我更建议先改造3件事：\n1. 会议纪要固定输出结论、负责人、截止时间；\n2. 日报按完成、阻塞、计划统一归纳；\n3. 长资料先抓事实和风险，再回原文核对。\n\n输入标准化，关键结果人工复核。先跑通一个场景，比同时学10个工具更有效。需要工作流清单，评论留「效率」。\n\n#AI办公# #职场成长# #效率工具#",
+    },
+    深度: {
+      title: "热议｜为什么很多人用了AI，还是没有准时下班？",
+      body: "【为什么用了AI，工作还是没有明显变轻？】\n\n最近和不少职场人交流，发现一个很普遍的现象：大家会让AI写邮件、做摘要、改文案，甚至收藏了几十个提示词，但真正忙起来时，依然回到原来的工作方式。\n\n问题不是工具不够强，而是AI没有进入稳定流程。\n\n一条能长期使用的工作流，至少需要三部分：固定的输入材料、明确的输出格式、必须人工检查的关键点。比如会议纪要不只要“总结一下”，而要形成结论、待办、负责人和截止时间；日报不只是润色，而要对齐完成事项、结果数据、阻塞和下一步。\n\n更重要的是，事实、数字和对外承诺必须回到原始材料复核。AI负责加速，人负责判断。\n\n不妨从一个每天重复的任务开始，坚持7天，记录节省的时间和返工次数。跑通一条流程，比一次学会10个新工具更有价值。\n\n我整理了一份AI办公工作流清单，需要的朋友评论留「效率」。\n\n#AI办公# #职场效率# #工作流# #打工人成长#",
+    },
+  },
 };
 
 function buildCopy(platform: ContentItem["platform"], depth: CopyDepth) {
@@ -103,12 +145,51 @@ const initialItems: ContentItem[] = [
     status: "待审核",
     version: 2,
   },
+  {
+    id: 4,
+    platform: "抖音",
+    platformKey: "black",
+    title: copyLibrary.抖音.深度.title,
+    body: copyLibrary.抖音.深度.body,
+    audience: "短视频效率内容用户",
+    quality: 95,
+    risk: "低风险",
+    status: "待审核",
+    version: 1,
+  },
+  {
+    id: 5,
+    platform: "视频号",
+    platformKey: "teal",
+    title: copyLibrary.视频号.深度.title,
+    body: copyLibrary.视频号.深度.body,
+    audience: "管理者与成熟职场人",
+    quality: 92,
+    risk: "低风险",
+    status: "待审核",
+    version: 1,
+  },
+  {
+    id: 6,
+    platform: "微博",
+    platformKey: "orange",
+    title: copyLibrary.微博.深度.title,
+    body: copyLibrary.微博.深度.body,
+    audience: "热点与效率话题用户",
+    quality: 90,
+    risk: "需复核",
+    status: "待审核",
+    version: 1,
+  },
 ];
 
 const platformStyles = {
   red: { icon: "书", label: "小红书" },
   green: { icon: "圈", label: "朋友圈" },
   blue: { icon: "号", label: "公众号" },
+  black: { icon: "抖", label: "抖音" },
+  teal: { icon: "视", label: "视频号" },
+  orange: { icon: "博", label: "微博" },
 };
 
 function SparkIcon() {
@@ -302,7 +383,7 @@ function AutomationView({ notify }: { notify: Notify }) {
   const [logs, setLogs] = useDurableState("automation-logs", [
     ["10:02", "每周内容计划", "生成 12 条内容，1 条需复核", "成功"],
     ["09:00", "用户标签同步", "新增 18 条，更新 64 条", "成功"],
-    ["昨天 18:30", "效果快报", "已汇总 3 个平台数据", "成功"],
+    ["昨天 18:30", "效果快报", "已汇总 6 个平台数据", "成功"],
   ]);
 
   function toggleTask(id: number) {
@@ -579,7 +660,7 @@ function ConnectionsView({ notify }: { notify: Notify }) {
 }
 
 export default function Home() {
-  const [items, setItems, contentSaveStatus] = useDurableState("content-items-rich-v1", initialItems);
+  const [items, setItems, contentSaveStatus] = useDurableState("content-items-six-platform-v1", initialItems);
   const [activeNav, setActiveNav] = useState("内容工作台");
   const [filter, setFilter] = useState<"全部" | "待审核" | "已通过">("全部");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -636,7 +717,7 @@ export default function Home() {
             ...item,
             ...generated,
             quality: Math.min(98, 94 + index),
-            risk: index === 2 ? "需复核" : "低风险",
+            risk: item.platform === "公众号" || item.platform === "微博" ? "需复核" : "低风险",
             version: item.version + 1,
             status: "待审核",
           };
@@ -645,7 +726,7 @@ export default function Home() {
       setExpandedIds([]);
       setHasGenerated(true);
       setIsGenerating(false);
-      showToast(`已生成 3 个平台的${copyDepth}文案`);
+      showToast(`已生成 6 个平台的${copyDepth}文案`);
     }, 1200);
   }
 
@@ -925,7 +1006,12 @@ export default function Home() {
                 <span><strong>准备发布到哪里？</strong><small>同一卖点会按平台特性改写</small></span>
               </div>
               <div className="platform-dots">
-                <span className="red">书</span><span className="green">圈</span><span className="blue">号</span>
+                <span className="red">书</span>
+                <span className="green">圈</span>
+                <span className="blue">号</span>
+                <span className="black">抖</span>
+                <span className="teal">视</span>
+                <span className="orange">博</span>
               </div>
             </div>
 
@@ -1075,8 +1161,8 @@ export default function Home() {
               <span className="flow-arrow" aria-hidden="true">→</span>
               <div className="example-card output-example">
                 <span>你得到的结果</span>
-                <strong>3 个平台文案</strong>
-                <div><i>小红书</i><i>朋友圈</i><i>公众号</i></div>
+                <strong>6 个平台文案</strong>
+                <div><i>小红书</i><i>朋友圈</i><i>公众号</i><i>抖音</i><i>视频号</i><i>微博</i></div>
               </div>
             </div>
 
