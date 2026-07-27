@@ -793,6 +793,7 @@ button:disabled {
 .rule-icon.purple { color: #6556df; background: #edebff; }
 .rule-icon.amber { color: #b8751f; background: #fff2dd; }
 .rule-icon.blue { color: #3481c8; background: #e7f3ff; }
+.rule-icon.violet { color: #7b56cb; background: #f2eaff; }
 
 .chips {
   margin-top: 12px;
@@ -849,6 +850,44 @@ button:disabled {
 .platform-dots .red, .platform-icon.red { background: #ff5c63; }
 .platform-dots .green, .platform-icon.green { background: #28b978; }
 .platform-dots .blue, .platform-icon.blue { background: #4e8df5; }
+
+.depth-selector {
+  margin-top: 13px;
+  padding: 12px;
+  border: 1px solid #eceaf7;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #fbfaff, #f7f5ff);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.depth-options {
+  padding: 3px;
+  border-radius: 9px;
+  background: #ece9f9;
+  display: flex;
+  gap: 2px;
+}
+
+.depth-options button {
+  min-width: 38px;
+  height: 25px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 7px;
+  color: #858091;
+  background: transparent;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.depth-options button.active {
+  color: #5d4bc3;
+  background: #fff;
+  box-shadow: 0 3px 9px rgba(77, 61, 160, 0.12);
+}
 
 .guardrail {
   margin-top: 13px;
@@ -1025,15 +1064,31 @@ button:disabled {
   white-space: nowrap;
 }
 
-.content-card p {
+.content-card p.copy-text {
   margin: 0;
   color: #767886;
   display: -webkit-box;
   overflow: hidden;
   font-size: 9px;
-  line-height: 1.7;
+  line-height: 1.85;
+  white-space: pre-line;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 4;
+}
+
+.content-card.expanded p.copy-text {
+  display: block;
+  overflow: visible;
+}
+
+.expand-copy {
+  margin-top: 7px;
+  padding: 0;
+  border: 0;
+  color: #7164cf;
+  background: transparent;
+  font-size: 8px;
+  font-weight: 700;
 }
 
 .content-footer {
@@ -1085,6 +1140,7 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 6px;
+  align-self: start;
 }
 
 .card-actions button {
@@ -1099,6 +1155,15 @@ button:disabled {
   color: #858793;
   background: #fff;
   font-size: 13px !important;
+}
+
+.edit-copy {
+  min-width: 38px;
+  padding: 0 8px;
+  border: 1px solid #e4e4ea;
+  color: #6d6f7d;
+  background: #fff;
+  font-weight: 700;
 }
 
 .approve {
@@ -1170,6 +1235,141 @@ button:disabled {
   border-radius: 50%;
   color: #fff;
   background: #3cbc8a;
+}
+
+.copy-editor-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  padding: 24px;
+  background: rgba(16, 17, 28, 0.68);
+  backdrop-filter: blur(8px);
+  display: grid;
+  place-items: center;
+}
+
+.copy-editor {
+  width: min(720px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 28px;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 35px 90px rgba(14, 15, 28, 0.3);
+  animation: guide-in 220ms ease-out;
+}
+
+.copy-editor-heading {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.copy-editor-heading span {
+  color: #7061d1;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.copy-editor-heading h2 {
+  margin: 6px 0 0;
+  font-size: 21px;
+}
+
+.copy-editor-heading > button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 9px;
+  color: #858793;
+  background: #f2f2f5;
+  font-size: 18px;
+}
+
+.copy-editor label,
+.copy-editor label > span {
+  display: block;
+}
+
+.copy-editor label {
+  margin-top: 14px;
+}
+
+.copy-editor label > span {
+  margin-bottom: 7px;
+  color: #626473;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.copy-editor input,
+.copy-editor textarea {
+  width: 100%;
+  border: 1px solid #dedee7;
+  border-radius: 12px;
+  outline: none;
+  color: #363744;
+  background: #fbfbfd;
+  font: inherit;
+}
+
+.copy-editor input {
+  height: 42px;
+  padding: 0 13px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.copy-editor textarea {
+  min-height: 330px;
+  padding: 13px;
+  resize: vertical;
+  font-size: 10px;
+  line-height: 1.8;
+}
+
+.copy-editor input:focus,
+.copy-editor textarea:focus {
+  border-color: #8b7ce8;
+  background: #fff;
+  box-shadow: 0 0 0 3px #efedff;
+}
+
+.copy-editor-meta {
+  margin-top: 9px;
+  color: #9294a0;
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+}
+
+.copy-editor-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.copy-editor-actions button {
+  height: 38px;
+  padding: 0 17px;
+  border-radius: 10px;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.editor-cancel {
+  border: 1px solid #e1e1e7;
+  color: #777986;
+  background: #fff;
+}
+
+.editor-save {
+  border: 0;
+  color: #fff;
+  background: var(--purple);
+  box-shadow: 0 8px 18px rgba(101, 86, 223, 0.2);
 }
 
 .guide-backdrop {

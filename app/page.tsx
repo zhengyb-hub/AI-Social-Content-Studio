@@ -15,42 +15,93 @@ type ContentItem = {
   version: number;
 };
 
+type CopyDepth = "精简" | "标准" | "深度";
+
+const copyLibrary: Record<ContentItem["platform"], Record<CopyDepth, { title: string; body: string }>> = {
+  小红书: {
+    精简: {
+      title: "每天少加1小时班，我用AI重做了工作流",
+      body: "不是工作太多，而是重复动作太多。我把会议纪要、日报整理和资料归纳交给AI后，每天稳定省下约1小时。先挑一个最耗时间的任务，固定输入模板，再人工复核结果，就能开始。想要我正在用的工作流清单，评论区留「效率」。\n\n#AI办公 #职场效率 #工作流",
+    },
+    标准: {
+      title: "每天少加1小时班：我的AI工作流改造清单",
+      body: "以前我每天最累的，不是做难题，而是在会议纪要、日报和资料整理之间来回切换。后来我没有继续收集更多AI工具，而是先重做了3个高频流程：\n\n① 会后把录音整理成「结论—负责人—截止时间」；\n② 下班前让AI按固定模板汇总日报；\n③ 阅读长资料时先提取事实、风险和待确认项。\n\n真正有用的不是“一键生成”，而是把输入标准化、把检查点留下来。现在这3件事每天能帮我省下约1小时。需要同款工作流模板，评论区留「效率」，我把清单发给你。\n\n#AI办公 #职场成长 #效率工具 #工作流",
+    },
+    深度: {
+      title: "每天少加1小时班，我把这3个重复任务交给了AI",
+      body: "刚入职时，我以为加班是因为自己不够熟练。后来才发现，真正吞掉时间的并不是难题，而是会议纪要、日报汇总和资料整理这些每天重复、又不能不做的小事。\n\n我没有一下子换掉所有工具，而是先改造了3个最稳定的场景：\n\n01｜会议结束后\n把录音和零散笔记交给AI，要求固定输出「核心结论、待办事项、负责人、截止时间」。我只需要核对事实，不再从头整理结构。\n\n02｜下班写日报时\n把当天的聊天记录和任务进度放进统一模板，让AI按「完成事项—结果数据—阻塞问题—明日计划」归纳，避免每天重新组织语言。\n\n03｜阅读长资料时\n先让AI提取关键事实、风险点和需要人工确认的内容，再回到原文复核。这样不是少看，而是带着问题看。\n\n这套方法最关键的地方只有两个：输入格式要固定，最终结果必须人工检查。坚持一周后，我每天大约能省下1小时，也不再被琐事拖到很晚。\n\n如果你也想从一个高频任务开始，我整理了一份可直接照着搭建的「AI办公工作流清单」。评论区留「效率」，我发给你。\n\n#AI办公 #职场效率 #工作流改造 #打工人成长 #效率工具",
+    },
+  },
+  朋友圈: {
+    精简: {
+      title: "让工具替你加班，而不是让自己硬撑",
+      body: "这周把邮件、表格和汇报三个高频任务重新做成了AI工作流。不是追求炫技，而是每天真实少做一点重复劳动。\n\n我把入门清单和示例模板整理成了试听资料，想试试的朋友回复「AI」，发你。",
+    },
+    标准: {
+      title: "真正有效的AI办公，是让重复工作自动往前走",
+      body: "最近帮几位朋友梳理工作流程，发现大家缺的往往不是更多AI工具，而是一套能直接落地的方法。\n\n我们把邮件回复、表格分析、会议纪要和汇报输出拆成固定步骤：什么交给AI，什么必须人工判断，最后怎样检查。这样做以后，工具才不是“偶尔玩一下”，而是真的进入每天的工作。\n\n本周开放一份AI办公试听资料，包含3个常用场景和可复制模板。想先看看是否适合自己，回复我「AI」即可领取。",
+    },
+    深度: {
+      title: "让工具替你加班，而不是让自己一直硬撑",
+      body: "这段时间和不少职场朋友交流，大家对AI办公最常见的困惑不是“不会用”，而是：试过很多工具，却依然没有省下时间。\n\n问题通常出在，我们只学了零散指令，没有把它放进真实工作流程。\n\n一套能落地的方法，应该先找到每天重复出现的任务，再明确三件事：哪些材料要输入、希望得到什么格式、哪些信息必须由人复核。比如邮件不只是让AI“帮我写”，而是先判断对象和目的；表格不只是“分析一下”，而是固定输出结论、异常和下一步；汇报也不是堆漂亮句子，而是让事实和行动建议对应起来。\n\n当这些步骤固定下来，AI才会从一个新鲜工具，变成稳定的工作搭档。\n\n我把邮件、表格、会议纪要和汇报四个场景整理成了一份试听资料，里面有可直接套用的模板和检查清单。本周开放领取，想先体验的朋友回复我「AI」，我单独发你。",
+    },
+  },
+  公众号: {
+    精简: {
+      title: "AI办公不是学工具，而是重构你的工作方式",
+      body: "真正决定AI能否提升效率的，不是你收藏了多少工具，而是有没有把它放进稳定的工作流程。先找出高频重复任务，定义输入与输出，再设置人工复核点。本文从邮件、资料分析和汇报三个场景，给出一套可以从今天开始实践的方法。",
+    },
+    标准: {
+      title: "AI办公不是学会一个工具，而是重构一条工作流",
+      body: "很多人已经会用AI写邮件、做摘要，却仍然感觉工作没有明显变轻。原因是我们把AI当成临时助手，而不是流程中的稳定环节。\n\n01 找到重复任务\n优先选择频率高、规则明确、耗时稳定的工作，例如会议纪要、资料归纳和日报整理。\n\n02 定义标准结果\n给出固定的输入材料、输出结构和判断标准，让每次生成都可复用、可比较。\n\n03 保留人工复核\n事实、数字、承诺和敏感表达必须回到原始资料检查。效率提升不等于放弃判断。\n\n从一条流程开始连续使用一周，比一次学十个工具更容易看到改变。文末附有AI办公场景清单，可用于梳理你的第一个自动化任务。",
+    },
+    深度: {
+      title: "AI办公不是学工具，而是重构你的工作方式",
+      body: "很多人已经会让AI写邮件、做摘要、改文案，但忙碌感并没有真正下降。问题往往不在工具能力，而在使用方式：我们把AI当成随用随开的聊天窗口，却没有让它进入稳定的工作流程。\n\n真正有效的AI办公，至少要完成三次转变。\n\n01｜从“想到才用”变成识别高频任务\n先回看一个真实工作日：哪些动作每周都会出现，规则相对固定，又持续消耗时间？会议纪要、资料归纳、日报汇总、初步数据分析，通常比复杂决策更适合作为起点。不要一次改造所有工作，先选一个能明确衡量前后差异的场景。\n\n02｜从“帮我生成”变成定义输入与输出\n一条可靠流程需要说明材料来源、目标对象、输出格式和检查标准。例如处理会议内容时，不只要求“总结”，而是固定输出核心结论、待办事项、负责人、截止时间和待确认信息。标准越清楚，结果越稳定，也越容易交给团队复用。\n\n03｜从“相信结果”变成人机协作复核\nAI可以加速整理和表达，但事实、数字、对外承诺与敏感信息仍需人工确认。把复核点设计在流程里，才能同时获得效率和安全，而不是用新的返工替代旧的重复劳动。\n\n一套工作流是否有效，可以用三个问题检验：是否减少了重复输入？输出是否能直接进入下一环节？出现错误时能否快速定位？如果答案都是“是”，AI才真正成为生产力的一部分。\n\n我们整理了邮件、表格、会议纪要和汇报输出四类常见场景的模板与检查清单。想从自己的第一个高频任务开始，可领取试听资料，按清单完成一次工作流改造。",
+    },
+  },
+};
+
+function buildCopy(platform: ContentItem["platform"], depth: CopyDepth) {
+  return copyLibrary[platform][depth];
+}
+
 const initialItems: ContentItem[] = [
   {
     id: 1,
     platform: "小红书",
     platformKey: "red",
     title: "每天少加1小时班，我用AI重做了工作流",
-    body: "刚入职时，我也曾被日报、会议纪要和重复表格困住。后来把最常见的3个任务交给AI，工作节奏终于不再失控……",
+    body: copyLibrary.小红书.深度.body,
     audience: "效率敏感型职场新人",
     quality: 96,
     risk: "低风险",
     status: "待审核",
-    version: 1,
+    version: 2,
   },
   {
     id: 2,
     platform: "朋友圈",
     platformKey: "green",
     title: "让工具替你加班，而不是让自己硬撑",
-    body: "一套真正能落地的AI办公方法，从邮件、表格到汇报都能直接套用。本周开放试听资料，想提效的朋友可以来领取。",
+    body: copyLibrary.朋友圈.深度.body,
     audience: "AI课程高意向新用户",
     quality: 93,
     risk: "低风险",
     status: "待审核",
-    version: 1,
+    version: 2,
   },
   {
     id: 3,
     platform: "公众号",
     platformKey: "blue",
     title: "AI办公不是学工具，而是重构你的工作方式",
-    body: "从一个真实的职场工作日出发，我们拆解邮件处理、资料分析和汇报输出三个高频场景，看看AI如何真正进入工作流。",
+    body: copyLibrary.公众号.深度.body,
     audience: "成长驱动型职场人",
     quality: 88,
     risk: "需复核",
     status: "待审核",
-    version: 1,
+    version: 2,
   },
 ];
 
@@ -528,10 +579,13 @@ function ConnectionsView({ notify }: { notify: Notify }) {
 }
 
 export default function Home() {
-  const [items, setItems, contentSaveStatus] = useDurableState("content-items", initialItems);
+  const [items, setItems, contentSaveStatus] = useDurableState("content-items-rich-v1", initialItems);
   const [activeNav, setActiveNav] = useState("内容工作台");
   const [filter, setFilter] = useState<"全部" | "待审核" | "已通过">("全部");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [copyDepth, setCopyDepth] = useState<CopyDepth>("深度");
+  const [expandedIds, setExpandedIds] = useState<number[]>([]);
+  const [editingItem, setEditingItem] = useState<ContentItem | null>(null);
   const [uploadedRows, setUploadedRows] = useState(486);
   const [fileName, setFileName] = useState("用户标签_0727.csv");
   const [hasCustomData, setHasCustomData] = useState(false);
@@ -576,16 +630,22 @@ export default function Home() {
     setIsGenerating(true);
     window.setTimeout(() => {
       setItems((current) =>
-        current.map((item, index) => ({
-          ...item,
-          quality: Math.min(98, item.quality + (index % 2)),
-          version: item.version + 1,
-          status: "待审核",
-        })),
+        current.map((item, index) => {
+          const generated = buildCopy(item.platform, copyDepth);
+          return {
+            ...item,
+            ...generated,
+            quality: Math.min(98, 94 + index),
+            risk: index === 2 ? "需复核" : "低风险",
+            version: item.version + 1,
+            status: "待审核",
+          };
+        }),
       );
+      setExpandedIds([]);
       setHasGenerated(true);
       setIsGenerating(false);
-      showToast("已生成 3 个平台的内容方案");
+      showToast(`已生成 3 个平台的${copyDepth}文案`);
     }, 1200);
   }
 
@@ -622,15 +682,43 @@ export default function Home() {
         item.id === id
           ? {
               ...item,
+              ...buildCopy(item.platform, copyDepth),
               version: item.version + 1,
               quality: Math.min(99, item.quality + 2),
-              body: `${item.body.replace(/……$/, "")} 现在就从一个高频任务开始，让改变看得见。`,
               risk: "低风险",
+              status: "待审核",
             }
           : item,
       ),
     );
-    showToast("已按品牌语气完成重写");
+    setExpandedIds((current) => current.includes(id) ? current : [...current, id]);
+    showToast(`已按品牌语气重写为${copyDepth}版本`);
+  }
+
+  function toggleExpanded(id: number) {
+    setExpandedIds((current) =>
+      current.includes(id) ? current.filter((itemId) => itemId !== id) : [...current, id],
+    );
+  }
+
+  function saveEditedItem() {
+    if (!editingItem) return;
+    if (!editingItem.title.trim() || !editingItem.body.trim()) {
+      showToast("标题和正文不能为空");
+      return;
+    }
+    setItems((current) =>
+      current.map((item) =>
+        item.id === editingItem.id
+          ? { ...editingItem, version: item.version + 1, status: "待审核" }
+          : item,
+      ),
+    );
+    setExpandedIds((current) =>
+      current.includes(editingItem.id) ? current : [...current, editingItem.id],
+    );
+    setEditingItem(null);
+    showToast("修改已保存");
   }
 
   function approveAll() {
@@ -841,6 +929,24 @@ export default function Home() {
               </div>
             </div>
 
+            <div className="depth-selector">
+              <div className="rule-title">
+                <span className="rule-icon violet" aria-hidden="true">≡</span>
+                <span><strong>文案要写到什么深度？</strong><small>篇幅、结构和信息密度会同步变化</small></span>
+              </div>
+              <div className="depth-options" role="group" aria-label="文案深度">
+                {(["精简", "标准", "深度"] as const).map((depth) => (
+                  <button
+                    key={depth}
+                    className={copyDepth === depth ? "active" : ""}
+                    onClick={() => setCopyDepth(depth)}
+                  >
+                    {depth}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="guardrail">
               <span aria-hidden="true">✓</span>
               <div><strong>品牌与合规规则已启用</strong><small>已加载 24 条禁用词、8 条品牌语气规则</small></div>
@@ -848,7 +954,7 @@ export default function Home() {
 
             <button className="generate-button" onClick={generateContent} disabled={isGenerating}>
               <SparkIcon />
-              <span><strong>{isGenerating ? "正在生成并质检…" : "第 3 步：生成多平台文案"}</strong><small>当前演示会生成 3 条 · 接入模型后可批量生成</small></span>
+              <span><strong>{isGenerating ? "正在生成并质检…" : "第 3 步：生成多平台成稿"}</strong><small>当前：{copyDepth}模式 · 自动匹配平台结构、段落和行动引导</small></span>
               <b aria-hidden="true">→</b>
             </button>
           </section>
@@ -879,8 +985,9 @@ export default function Home() {
             <div className="content-list">
               {filteredItems.map((item) => {
                 const platform = platformStyles[item.platformKey];
+                const isExpanded = expandedIds.includes(item.id);
                 return (
-                  <article className={`content-card ${item.status === "已通过" ? "approved" : ""}`} key={item.id}>
+                  <article className={`content-card ${item.status === "已通过" ? "approved" : ""} ${isExpanded ? "expanded" : ""}`} key={item.id}>
                     <div className={`platform-icon ${item.platformKey}`}>{platform.icon}</div>
                     <div className="content-body">
                       <div className="content-meta">
@@ -890,7 +997,10 @@ export default function Home() {
                         <span className="version">V{item.version}</span>
                       </div>
                       <h4>{item.title}</h4>
-                      <p>{item.body}</p>
+                      <p className="copy-text">{item.body}</p>
+                      <button className="expand-copy" onClick={() => toggleExpanded(item.id)}>
+                        {isExpanded ? "收起正文 ↑" : `展开全文 · ${item.body.length} 字 ↓`}
+                      </button>
                       <div className="content-footer">
                         <span className={`score ${item.quality >= 92 ? "high" : ""}`}>
                           <i /> 质量分 {item.quality}
@@ -902,6 +1012,7 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="card-actions">
+                      <button className="edit-copy" onClick={() => setEditingItem(item)}>编辑</button>
                       <button className="rewrite" onClick={() => rewriteItem(item.id)} aria-label={`重写${item.platform}内容`}>↻</button>
                       <button className={`approve ${item.status === "已通过" ? "is-approved" : ""}`} onClick={() => approveItem(item.id)}>
                         {item.status === "已通过" ? "已通过" : "通过"}
@@ -983,6 +1094,48 @@ export default function Home() {
             <div className="guide-actions">
               <button className="guide-template" onClick={downloadTemplate}>先下载标签模板</button>
               <button className="guide-start" onClick={() => setShowGuide(false)}>用示例数据开始体验 →</button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {editingItem && (
+        <div className="copy-editor-backdrop" role="presentation" onMouseDown={() => setEditingItem(null)}>
+          <section
+            className="copy-editor"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="copy-editor-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="copy-editor-heading">
+              <div>
+                <span>{editingItem.platform} · V{editingItem.version}</span>
+                <h2 id="copy-editor-title">编辑宣传文案</h2>
+              </div>
+              <button onClick={() => setEditingItem(null)} aria-label="关闭编辑器">×</button>
+            </div>
+            <label>
+              <span>标题</span>
+              <input
+                value={editingItem.title}
+                onChange={(event) => setEditingItem({ ...editingItem, title: event.target.value })}
+              />
+            </label>
+            <label>
+              <span>正文</span>
+              <textarea
+                value={editingItem.body}
+                onChange={(event) => setEditingItem({ ...editingItem, body: event.target.value })}
+              />
+            </label>
+            <div className="copy-editor-meta">
+              <span>{editingItem.body.length} 字</span>
+              <span>保存后自动进入待审核</span>
+            </div>
+            <div className="copy-editor-actions">
+              <button className="editor-cancel" onClick={() => setEditingItem(null)}>取消</button>
+              <button className="editor-save" onClick={saveEditedItem}>保存修改</button>
             </div>
           </section>
         </div>
