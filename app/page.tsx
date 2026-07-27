@@ -313,7 +313,7 @@ function AudienceView({ notify }: { notify: Notify }) {
   }
 
   return (
-    <section className="module-page">
+    <section className="module-page audience-page">
       <ModuleHeader
         eyebrow="Audience strategy"
         title="人群策略"
@@ -412,7 +412,7 @@ function AutomationView({ notify }: { notify: Notify }) {
   }
 
   return (
-    <section className="module-page">
+    <section className="module-page automation-page">
       <ModuleHeader
         eyebrow="Automation"
         title="自动化"
@@ -487,7 +487,7 @@ function KnowledgeView({ notify }: { notify: Notify }) {
   }
 
   return (
-    <section className="module-page">
+    <section className="module-page knowledge-page">
       <ModuleHeader
         eyebrow="Brand knowledge"
         title="品牌知识库"
@@ -547,7 +547,7 @@ function InsightsView({ notify }: { notify: Notify }) {
   const number = (value: number) => Math.round(value * multiplier).toLocaleString("zh-CN");
 
   return (
-    <section className="module-page">
+    <section className="module-page insights-page">
       <ModuleHeader
         eyebrow="Performance insights"
         title="效果洞察"
@@ -566,7 +566,14 @@ function InsightsView({ notify }: { notify: Notify }) {
         <div className="module-card chart-card">
           <div className="module-card-head"><div><span>平台表现</span><strong>点击率与转化率</strong></div><button onClick={() => notify("洞察数据已刷新")}>刷新</button></div>
           <div className="bar-chart">
-            {[["小红书", 84, "7.8%", "red"], ["朋友圈", 66, "6.1%", "green"], ["公众号", 52, "4.9%", "blue"]].map(([name, width, value, color]) => (
+            {[
+              ["小红书", 84, "7.8%", "red"],
+              ["抖音", 74, "6.9%", "black"],
+              ["朋友圈", 66, "6.1%", "green"],
+              ["视频号", 59, "5.5%", "teal"],
+              ["公众号", 52, "4.9%", "blue"],
+              ["微博", 48, "4.4%", "orange"],
+            ].map(([name, width, value, color]) => (
               <div className="bar-row" key={name}><span>{name}</span><div><i className={String(color)} style={{ width: `${width}%` }} /></div><strong>{value}</strong></div>
             ))}
           </div>
@@ -607,7 +614,7 @@ function ConnectionsView({ notify }: { notify: Notify }) {
   }
 
   return (
-    <section className="module-page">
+    <section className="module-page connections-page">
       <ModuleHeader
         eyebrow="Connections"
         title="数据与模型连接"
