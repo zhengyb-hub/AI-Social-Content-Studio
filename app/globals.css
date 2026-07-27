@@ -2800,6 +2800,57 @@ body {
   background: #f1faf6;
 }
 
+/* Keep every generated draft readable instead of shrinking six cards into one viewport. */
+.content-list {
+  max-height: 760px;
+  overflow-y: auto;
+  align-items: stretch;
+  scroll-padding-block: 12px;
+}
+
+.content-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.content-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.content-list::-webkit-scrollbar-thumb {
+  border: 2px solid #f8f8fb;
+  border-radius: 99px;
+  background: #cfd1dc;
+}
+
+.content-card {
+  min-height: 220px;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.content-card p.copy-text {
+  min-height: 104px;
+  -webkit-line-clamp: 4;
+}
+
+.content-card.expanded p.copy-text {
+  min-height: 0;
+}
+
+.card-actions {
+  max-width: none;
+  flex-wrap: nowrap;
+}
+
+.review-actions {
+  flex-wrap: nowrap;
+}
+
+.expand-all {
+  color: #5f53c6;
+  background: #f7f5ff;
+}
+
 @keyframes toast-in {
   from { transform: translateY(8px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }

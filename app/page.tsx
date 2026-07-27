@@ -695,6 +695,8 @@ export default function Home() {
     ),
     [items, filter, platformFilter],
   );
+  const allVisibleExpanded =
+    filteredItems.length > 0 && filteredItems.every((item) => expandedIds.includes(item.id));
 
   const approved = items.filter((item) => item.status === "已通过").length;
   const averageScore = Math.round(
@@ -795,6 +797,15 @@ export default function Home() {
   function toggleExpanded(id: number) {
     setExpandedIds((current) =>
       current.includes(id) ? current.filter((itemId) => itemId !== id) : [...current, id],
+    );
+  }
+
+  function toggleAllExpanded() {
+    const visibleIds = filteredItems.map((item) => item.id);
+    setExpandedIds((current) =>
+      allVisibleExpanded
+        ? current.filter((id) => !visibleIds.includes(id))
+        : Array.from(new Set([...current, ...visibleIds])),
     );
   }
 
@@ -1072,6 +1083,9 @@ export default function Home() {
                 <p className="heading-help">检查标题、正文和风险提示；满意后点击“通过”，最后导出。</p>
               </div>
               <div className="review-actions">
+                <button className="ghost-button expand-all" onClick={toggleAllExpanded}>
+                  {allVisibleExpanded ? "收起全部" : "展开全部"}
+                </button>
                 <button className="ghost-button" onClick={exportCsv}>导出</button>
                 <button className="approve-all" onClick={approveAll}>全部通过</button>
               </div>
