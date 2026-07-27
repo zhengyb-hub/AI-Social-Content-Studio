@@ -16,6 +16,7 @@ type ContentItem = {
 };
 
 type CopyDepth = "精简" | "标准" | "深度";
+type PlatformFilter = "全部平台" | ContentItem["platform"];
 
 const copyLibrary: Record<ContentItem["platform"], Record<CopyDepth, { title: string; body: string }>> = {
   小红书: {
@@ -191,6 +192,16 @@ const platformStyles = {
   teal: { icon: "视", label: "视频号" },
   orange: { icon: "博", label: "微博" },
 };
+
+const platformFilterOptions: Array<{ label: PlatformFilter; key: "all" | ContentItem["platformKey"] }> = [
+  { label: "全部平台", key: "all" },
+  { label: "小红书", key: "red" },
+  { label: "朋友圈", key: "green" },
+  { label: "公众号", key: "blue" },
+  { label: "抖音", key: "black" },
+  { label: "视频号", key: "teal" },
+  { label: "微博", key: "orange" },
+];
 
 function SparkIcon() {
   return <span className="spark" aria-hidden="true">✦</span>;
@@ -663,6 +674,7 @@ export default function Home() {
   const [items, setItems, contentSaveStatus] = useDurableState("content-items-six-platform-v1", initialItems);
   const [activeNav, setActiveNav] = useState("内容工作台");
   const [filter, setFilter] = useState<"全部" | "待审核" | "已通过">("全部");
+  const [platformFilter, setPlatformFilter] = useState<PlatformFilter>("全部平台");
   const [isGenerating, setIsGenerating] = useState(false);
   const [copyDepth, setCopyDepth] = useState<CopyDepth>("深度");
   const [expandedIds, setExpandedIds] = useState<number[]>([]);
@@ -671,13 +683,17 @@ export default function Home() {
   const [fileName, setFileName] = useState("用户标签_0727.csv");
   const [hasCustomData, setHasCustomData] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
-  const [showGuide, setShowGuide] = useState(true);
+  const [showGuide, setShowGuide] = useState(false);
   const [toast, setToast] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const filteredItems = useMemo(
-    () => items.filter((item) => filter === "全部" || item.status === filter),
-    [items, filter],
+    () => items.filter(
+      (item) =>
+        (filter === "全部" || item.status === filter) &&
+        (platformFilter === "全部平台" || item.platform === platformFilter),
+    ),
+    [items, filter, platformFilter],
   );
 
   const approved = items.filter((item) => item.status === "已通过").length;
@@ -833,7 +849,7 @@ export default function Home() {
 
   const navItems = ["内容工作台", "人群策略", "自动化", "品牌知识库", "数据连接", "效果洞察"];
   const navCounts: Record<string, string> = {
-    "内容工作台": "12",
+    "内容工作台": "6",
     "人群策略": "4",
     "自动化": "3",
     "品牌知识库": "8",
@@ -906,28 +922,31 @@ export default function Home() {
 
         <section className="hero-card guide-hero">
           <div className="hero-copy">
-            <span className="hero-kicker"><SparkIcon /> 第一次使用？照着下面 3 步操作</span>
-            <h2>上传标签 → 自动生成 → 审核导出</h2>
-            <p>不用写提示词。准备一份用户标签表，系统会按人群和平台生成不同文案。</p>
+            <span className="hero-kicker"><SparkIcon /> 智能内容工作流</span>
+            <h2>从用户标签到<br />六平台成稿</h2>
+            <p>导入人群数据，自动匹配品牌语气与平台结构，在一个工作台完成生成、优化、审核和导出。</p>
             <div className="hero-buttons">
               <button className="hero-primary" onClick={() => fileRef.current?.click()}>
-                {hasCustomData ? "更换标签文件" : "第 1 步：上传标签 CSV"} <span>→</span>
+                {hasCustomData ? "更换标签文件" : "上传标签 CSV"} <span>→</span>
               </button>
               <button className="hero-secondary" onClick={downloadTemplate}>下载标签模板</button>
             </div>
           </div>
-          <div className="hero-orbit" aria-hidden="true">
-            <div className="orbit orbit-one" />
-            <div className="orbit orbit-two" />
-            <div className="orbit-core"><SparkIcon /></div>
-            <span className="float-tag tag-one">职场新人</span>
-            <span className="float-tag tag-two">高意向</span>
-            <span className="float-tag tag-three">效率工具</span>
-          </div>
-          <div className="hero-stats">
-            <div><strong>{uploadedRows}</strong><span>{hasCustomData ? "你的用户记录" : "示例用户"}</span></div>
-            <div><strong>4</strong><span>重点人群</span></div>
-            <div><strong>{averageScore}</strong><span>平均质量分</span></div>
+          <div className="hero-preview">
+            <div className="hero-preview-head">
+              <span>本次生成配置</span>
+              <em><i /> 已就绪</em>
+            </div>
+            <div className="hero-preview-grid">
+              <div><span>用户记录</span><strong>{uploadedRows}</strong><small>{hasCustomData ? "你的数据" : "示例数据"}</small></div>
+              <div><span>重点人群</span><strong>4</strong><small>自动聚类</small></div>
+              <div><span>发布渠道</span><strong>6</strong><small>平台适配</small></div>
+              <div><span>平均质量</span><strong>{averageScore}</strong><small>自动质检</small></div>
+            </div>
+            <div className="hero-channel-row" aria-label="已选择的平台">
+              <span>书</span><span>圈</span><span>号</span><span>抖</span><span>视</span><span>博</span>
+              <b>品牌语气已应用</b>
+            </div>
           </div>
         </section>
 
@@ -1068,12 +1087,28 @@ export default function Home() {
               <button className="sort-button">质量分 ↓</button>
             </div>
 
+            <div className="channel-filter" role="group" aria-label="平台筛选">
+              <span>查看渠道</span>
+              <div>
+                {platformFilterOptions.map((option) => (
+                  <button
+                    key={option.label}
+                    className={`${platformFilter === option.label ? "active" : ""} ${option.key}`}
+                    onClick={() => setPlatformFilter(option.label)}
+                  >
+                    {option.key !== "all" && <i />}
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="content-list">
               {filteredItems.map((item) => {
                 const platform = platformStyles[item.platformKey];
                 const isExpanded = expandedIds.includes(item.id);
                 return (
-                  <article className={`content-card ${item.status === "已通过" ? "approved" : ""} ${isExpanded ? "expanded" : ""}`} key={item.id}>
+                  <article className={`content-card ${item.platformKey} ${item.status === "已通过" ? "approved" : ""} ${isExpanded ? "expanded" : ""}`} key={item.id}>
                     <div className={`platform-icon ${item.platformKey}`}>{platform.icon}</div>
                     <div className="content-body">
                       <div className="content-meta">
@@ -1099,7 +1134,7 @@ export default function Home() {
                     </div>
                     <div className="card-actions">
                       <button className="edit-copy" onClick={() => setEditingItem(item)}>编辑</button>
-                      <button className="rewrite" onClick={() => rewriteItem(item.id)} aria-label={`重写${item.platform}内容`}>↻</button>
+                      <button className="rewrite" onClick={() => rewriteItem(item.id)} aria-label={`AI优化${item.platform}内容`}><SparkIcon /> AI 优化</button>
                       <button className={`approve ${item.status === "已通过" ? "is-approved" : ""}`} onClick={() => approveItem(item.id)}>
                         {item.status === "已通过" ? "已通过" : "通过"}
                       </button>
