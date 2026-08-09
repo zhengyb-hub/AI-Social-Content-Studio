@@ -1,74 +1,147 @@
-# EchoFlow AI 内容运营台
+# EchoFlow AI Solution Marketing Studio
 
-一个根据用户标签批量生成小红书、朋友圈、公众号、抖音、视频号和微博宣传文案的内容运营工具。
+EchoFlow is an AI-assisted B2B/B2G solution-marketing prototype for Digital Zhengzhou Technology Co., Ltd. It turns structured smart-city and digital-government solution information into stakeholder-specific marketing and sales-support content, then tracks human review, approval, reuse and workflow efficiency.
 
-[在线体验 EchoFlow](https://echoflow-ai-content-studio.zhengyb2839144.chatgpt.site)
+> Data boundary: every included solution, asset and benchmark row is fictional demonstration/evaluation data. The repository does not contain Digital Zhengzhou internal product data, government databases, real clients or procurement-system records.
 
-> 在线站点目前采用私有访问策略，可能需要使用已获授权的 ChatGPT 账号登录。仓库公开不代表站点数据公开。
+## Business problem
 
-![EchoFlow 产品预览](public/og.png)
+Complex government and enterprise solutions must be explained differently to executives, procurement teams, enterprise clients, technical decision makers and ecosystem partners. Rewriting every brief, proposal section, event message or sales-support asset is slow, while ungrounded AI generation introduces factual and reputational risk.
 
-## 能做什么
+## Solution
 
-- 上传 CSV 用户标签表，并读取用户数量
-- 按相似标签自动展示人群分组
-- 为小红书、朋友圈、公众号、抖音、视频号和微博生成差异化文案
-- 提供精简、标准、深度三种文案模式
-- 展开、编辑、重写和审核单条内容
-- 批量通过并导出 CSV
-- 保存内容、人群策略、自动化任务和知识库状态
-- 展示数据连接与运营洞察页面
+EchoFlow standardises the workflow:
 
-## 当前状态
+`Solution → Stakeholder → Messaging Strategy → AI Content Generation → Human Review → Approval → Reuse → Export`
 
-这是可交互的产品原型，页面操作、审核、导出和云端状态保存已经可用。
+The user selects a structured solution record and stakeholder profile, reviews an editable messaging strategy, generates an evidence-conscious draft, records the review outcome, and tracks later reuse. Analytics are recalculated from the underlying workspace records.
 
-文案生成目前采用内置演示逻辑，尚未接入真实大模型 API；上传的标签用于演示数据读取流程，不会触发真实的个性化模型生成。后续可接入 OpenAI API、CRM 和各社交平台发布接口。
+## Target users
 
-## 本地运行
+- Solution Marketing Teams
+- B2B/B2G Marketing Teams
+- Sales Enablement Teams
+- Product Marketing Teams
 
-环境要求：Node.js `>=22.13.0`
+## Features
+
+- **Dashboard:** managed solutions, stakeholder coverage, asset volume, approval rate, efficiency and content-performance summaries.
+- **Solution Library:** complete solution records with business problem, capabilities, value, technical highlights, context and source reference.
+- **Stakeholder segmentation:** five reusable profiles covering goals, pain points, information needs, messaging priority, technical depth, tone, CTA and risk concerns.
+- **Messaging Strategy:** editable value proposition, three key messages, proof points, tone, CTA and content angle before generation.
+- **AI content generation:** inputs are limited to solution data, stakeholder profile, reviewed strategy and content type. The prompt forbids invented statistics, partnerships, cases and capabilities.
+- **Demo Mode:** deterministic content generation works without an API key. API mode automatically falls back to Demo Mode if the key or request is unavailable.
+- **Human review:** Draft/In review → Approve or Reject → Edit or Regenerate → Final, with event timestamps, first-pass state, edit count and review time.
+- **Reuse tracking:** approved/final assets can be marked as reused for Proposal, Event, Sales Deck, Corporate Social or Client Brief contexts.
+- **Analytics:** all KPIs are calculated from content, review, reuse and benchmark records at runtime.
+- **Workflow Benchmark:** compares manual adaptation with generation + review + editing, not model speed alone.
+- **Export:** `solutions.csv`, `content_assets.csv`, `reviews.csv`, `benchmarks.csv`, `analytics_summary.csv` and the complete JSON workspace.
+
+## Architecture
+
+```text
+app/page.tsx                 React product interface and workflow actions
+app/lib/echoflow.ts          Domain model, demo evaluator, KPI formulas, CSV export
+app/api/generate/route.ts    Guarded API generation with no-key demo fallback
+app/api/state/route.ts       Versioned workspace persistence boundary
+db/schema.ts                 Drizzle schema for D1 workspace state
+drizzle/                     Cloudflare D1 migration
+worker/index.ts              Existing vinext Cloudflare Worker entry
+tests/echoflow.test.mjs      Domain and workflow behaviour tests
+```
+
+The application deliberately retains the original Next.js/React/vinext/Cloudflare D1 architecture. The versioned workspace object is persisted under `workspace_state.key = 'solution-marketing-workspace'`. This provides durable hosted state without replacing the already-working persistence boundary.
+
+## Analytics
+
+| KPI | Calculation |
+|---|---|
+| Total Solutions | count of solution records |
+| Stakeholder Segments | count of stakeholder profiles |
+| Content Assets Generated | count of content assets |
+| Approved Assets | assets with `approved` or `final` status |
+| First-Pass Approval Rate | `approved_first_pass = true` ÷ reviewed assets |
+| Average Edit Count | total asset edit count ÷ all assets |
+| Content Reuse Rate | approved/final assets with `reuse_count > 0` ÷ approved/final assets |
+| Average Generation Time | mean `generation_seconds` |
+| Average Review Time | mean `review_time_minutes` for reviewed assets |
+
+## Benchmark method
+
+Each row records `manual_minutes`, `ai_generation_minutes`, `ai_review_minutes` and `ai_edit_minutes` for the same solution/stakeholder/content-type task.
+
+```text
+total_ai_minutes = ai_generation_minutes + ai_review_minutes + ai_edit_minutes
+time_saved_minutes = manual_minutes - total_ai_minutes
+time_reduction_percentage = time_saved_minutes / manual_minutes × 100
+```
+
+The bundled rows are deterministic prototype-evaluation observations for reproducibility; they are not employee time studies. Replace or extend them through the Benchmark screen with stopwatch observations before making workplace productivity claims.
+
+## Demo dataset and current evaluation
+
+Resetting the workspace materialises ordinary system records for 12 fictional solutions × 5 stakeholder profiles × 2 content variants = 120 assets. The following values are calculated from those records—not stored as KPI constants:
+
+| Metric | Current reproducible result | Source sample |
+|---|---:|---:|
+| Solutions | 12 | 12 solution records |
+| Stakeholders | 5 | 5 profiles |
+| Content assets | 120 | 120 asset records |
+| Approved assets | 91 | 120 asset records |
+| First-pass approval rate | 63.6% | 107 reviewed assets |
+| Content reuse rate | 74.7% | 91 approved/final assets |
+| Average edit count | 0.39 | 120 assets |
+| Average generation time | 15.7 seconds | 120 assets |
+| Average review time | 10.9 minutes | 107 reviewed assets |
+| Average manual adaptation | 46.4 minutes | 120 benchmark rows |
+| Average EchoFlow adaptation | 12.3 minutes | 120 benchmark rows |
+| Average time reduction | 72.8% | 120 benchmark rows |
+
+Use `CV_EVIDENCE.md` for claim-by-claim provenance and reproduction instructions.
+
+## Tech stack
+
+- Next.js 16 and React 19
+- TypeScript
+- vinext / Vite for Cloudflare Workers
+- Cloudflare D1
+- Drizzle ORM
+- Node.js 22.13 or newer
+
+## Setup
 
 ```bash
 npm install
 npm run dev
 ```
 
-打开终端提示的本地地址即可使用。
-
-生产构建与测试：
+Production validation:
 
 ```bash
 npm run build
 npm test
 ```
 
-## 技术栈
+On Windows, ensure a Node.js 22+ installation is first on `PATH`.
 
-- React 19
-- Next.js 16
-- vinext / Vite
-- Cloudflare D1
-- Drizzle ORM
-- OpenAI Sites
+## Demo Mode and optional API mode
 
-## 数据结构
-
-应用使用 D1 的 `workspace_state` 表保存各模块的 JSON 状态。表结构位于 `db/schema.ts`，迁移文件位于 `drizzle/`。
-
-## 主要目录
+Demo Mode is the default and requires no secret. To enable server-side API generation, configure hosted runtime values (never commit them):
 
 ```text
-app/                 页面、样式和状态 API
-db/                  D1 数据库访问与表结构
-drizzle/             数据库迁移
-public/              图标和预览图
-tests/               构建结果测试
-.openai/hosting.json Sites 项目绑定
+OPENAI_API_KEY=<secret>
+OPENAI_MODEL=gpt-5.6-luna   # optional override
 ```
 
-## 安全说明
+Then choose **API Mode** in Settings. The server uses the Responses API and returns to deterministic Demo Mode on a missing key, unavailable endpoint, invalid response or request error. This keeps the prototype usable offline and prevents credentials reaching the browser.
 
-- `.env*`、构建目录、缓存和依赖目录已通过 `.gitignore` 排除
-- 请勿把模型 API Key 或平台密钥直接写入源码
-- 生产密钥应配置在部署平台的环境变量中
+## Limitations
+
+- The seeded approval, edit, reuse and timing outcomes are reproducible evaluation fixtures, not evidence of live employee or client usage.
+- API-generated text still requires human evidence review.
+- The D1 record is workspace-scoped; the prototype does not yet implement multi-tenant identity or row-level ownership.
+- No CRM integration, automated publishing, government database integration, production procurement integration or real Digital Zhengzhou data is implemented.
+
+## Future integration pathway
+
+After governance and security review, the current boundaries could support approved solution catalogues, enterprise identity, CRM references, content-approval policies and controlled publishing connectors. These are future pathways, not completed features.

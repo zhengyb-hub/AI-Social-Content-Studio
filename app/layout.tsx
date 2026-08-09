@@ -6,24 +6,24 @@ export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const protocol = requestHeaders.get("x-forwarded-proto") ?? "https";
-  const imageUrl = host ? `${protocol}://${host}/og.png` : undefined;
+  const imageUrl = host ? `${protocol}://${host}/og-solution-marketing.png` : undefined;
 
   return {
-    title: "EchoFlow｜AI 内容运营台",
-    description: "根据用户标签自动生成、质检和审核多平台社交媒体文案。",
+    title: "EchoFlow | AI Solution Marketing Studio",
+    description: "AI-assisted stakeholder messaging, content review, reuse tracking and workflow analytics for B2B and B2G solution marketing.",
     icons: {
       icon: "/favicon.svg",
       shortcut: "/favicon.svg",
     },
     openGraph: {
-      title: "EchoFlow｜AI 内容运营台",
-      description: "把标签变成内容，把内容变成增长。",
+      title: "EchoFlow | AI Solution Marketing Studio",
+      description: "Turn complex smart-city solutions into stakeholder-ready, evidence-conscious content.",
       images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630 }] : undefined,
     },
     twitter: {
       card: "summary_large_image",
-      title: "EchoFlow｜AI 内容运营台",
-      description: "把标签变成内容，把内容变成增长。",
+      title: "EchoFlow | AI Solution Marketing Studio",
+      description: "Turn complex smart-city solutions into stakeholder-ready, evidence-conscious content.",
       images: imageUrl ? [imageUrl] : undefined,
     },
   };
