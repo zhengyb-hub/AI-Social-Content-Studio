@@ -20,7 +20,7 @@ test("creates a reproducible, non-claimed evaluation dataset", () => {
   assert.equal(workspace.stakeholders.length, 5);
   assert.equal(workspace.assets.length, 120);
   assert.equal(workspace.benchmarks.length, workspace.assets.length);
-  assert.ok(workspace.solutions.every((solution) => solution.source_reference.includes("fictional demo")));
+  assert.ok(workspace.solutions.every((solution) => solution.source_reference.includes("虚构演示")));
 });
 
 test("calculates KPI values from records", () => {
@@ -34,7 +34,7 @@ test("calculates KPI values from records", () => {
 });
 
 test("uses complete AI workflow time in benchmark calculations", () => {
-  const row = makeBenchmark({ benchmark_id: "BM-TEST", solution_id: "SOL-001", stakeholder_id: "STK-GOV", content_type: "Solution Brief", manual_minutes: 60, ai_generation_minutes: 2, ai_review_minutes: 10, ai_edit_minutes: 8, timestamp: new Date().toISOString() });
+  const row = makeBenchmark({ benchmark_id: "BM-TEST", solution_id: "SOL-001", stakeholder_id: "STK-GOV", content_type: "解决方案简报", manual_minutes: 60, ai_generation_minutes: 2, ai_review_minutes: 10, ai_edit_minutes: 8, timestamp: new Date().toISOString() });
   assert.equal(row.total_ai_minutes, 20);
   assert.equal(row.time_saved_minutes, 40);
   assert.equal(row.time_reduction_percentage, 66.7);
@@ -45,11 +45,11 @@ test("generates stakeholder-specific demo content without unsupported claims", (
   const solution = workspace.solutions[0];
   const government = workspace.stakeholders[0];
   const technical = workspace.stakeholders[3];
-  const govCopy = generateDemoCopy(solution, government, createStrategy(solution, government, "Build awareness", "Executive Summary"));
-  const techCopy = generateDemoCopy(solution, technical, createStrategy(solution, technical, "Build awareness", "Solution Brief"));
+  const govCopy = generateDemoCopy(solution, government, createStrategy(solution, government, "建立认知", "高管摘要"));
+  const techCopy = generateDemoCopy(solution, technical, createStrategy(solution, technical, "建立认知", "解决方案简报"));
   assert.notEqual(govCopy.content, techCopy.content);
-  assert.match(govCopy.content, /no statistics, clients, government partnerships or production capabilities have been inferred/i);
-  assert.match(techCopy.content, /architecture|technical|security/i);
+  assert.match(govCopy.content, /没有推断或虚构统计数据、客户案例、政府合作关系或生产环境能力/);
+  assert.match(techCopy.content, /架构|技术|安全/);
 });
 
 test("records approve, reject, edit and reuse workflow actions", () => {
@@ -59,9 +59,9 @@ test("records approve, reject, edit and reuse workflow actions", () => {
   workspace = applyReviewDecision(workspace, draft.draft_id, "approved", "2026-08-01T10:00:00.000Z");
   assert.equal(workspace.assets.find((asset) => asset.draft_id === draft.draft_id).review_status, "approved");
   assert.equal(workspace.assets.find((asset) => asset.draft_id === draft.draft_id).approved_first_pass, true);
-  workspace = applyReuse(workspace, draft.draft_id, "Proposal");
+  workspace = applyReuse(workspace, draft.draft_id, "项目建议书");
   assert.equal(workspace.assets.find((asset) => asset.draft_id === draft.draft_id).reuse_count, 1);
-  workspace = applyContentEdit(workspace, draft.draft_id, "Edited title", "Edited, evidence-checked content.");
+  workspace = applyContentEdit(workspace, draft.draft_id, "已编辑标题", "已编辑并完成证据核验的内容。");
   const edited = workspace.assets.find((asset) => asset.draft_id === draft.draft_id);
   assert.equal(edited.review_status, "in_review");
   assert.ok(edited.edit_count > 0);
@@ -84,7 +84,7 @@ test("generation input validation and missing-key fallback remain safe", () => {
   const workspace = buildDemoWorkspace();
   const solution = workspace.solutions[0];
   const stakeholder = workspace.stakeholders[0];
-  const strategy = createStrategy(solution, stakeholder, "Build awareness", "Solution Brief");
+  const strategy = createStrategy(solution, stakeholder, "建立认知", "解决方案简报");
   assert.equal(isGenerationRequest({ solution, stakeholder, strategy, requestedMode: "api" }), true);
   assert.equal(demoFallbackReason("api", undefined), "missing_api_key");
   assert.equal(demoFallbackReason("api", "configured"), null);

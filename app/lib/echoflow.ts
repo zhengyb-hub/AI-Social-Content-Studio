@@ -23,7 +23,7 @@ export type Stakeholder = {
   pain_points: string[];
   information_needs: string[];
   messaging_priority: string[];
-  technical_depth: "Low" | "Medium" | "High";
+  technical_depth: "低" | "中" | "高";
   preferred_tone: string;
   cta: string;
   risk_concerns: string[];
@@ -90,7 +90,7 @@ export type BenchmarkRecord = {
 };
 
 export type Workspace = {
-  schema_version: 2;
+  schema_version: 3;
   solutions: Solution[];
   stakeholders: Stakeholder[];
   strategies: MessagingStrategy[];
@@ -117,27 +117,27 @@ export type Analytics = {
 };
 
 export const CONTENT_TYPES = [
-  "Solution Brief",
-  "Executive Summary",
-  "Proposal Copy",
-  "Sales Enablement Copy",
-  "Case Study Summary",
-  "Event / Conference Messaging",
-  "Corporate Social Content",
-  "Solution Introduction",
-  "Stakeholder Email",
-  "Campaign Copy",
+  "解决方案简报",
+  "高管摘要",
+  "建议书文案",
+  "销售赋能文案",
+  "案例摘要",
+  "活动 / 会议传播文案",
+  "企业社交媒体内容",
+  "解决方案介绍",
+  "关键角色邮件",
+  "整合营销文案",
 ] as const;
 
 export const MARKETING_OBJECTIVES = [
-  "Build awareness",
-  "Support stakeholder alignment",
-  "Enable a sales conversation",
-  "Explain implementation value",
-  "Support proposal development",
+  "提升方案认知",
+  "促进关键角色共识",
+  "支持销售沟通",
+  "说明实施价值",
+  "支持建议书编制",
 ] as const;
 
-export const REUSE_CONTEXTS = ["Proposal", "Event", "Sales Deck", "Corporate Social", "Client Brief"] as const;
+export const REUSE_CONTEXTS = ["项目建议书", "行业活动", "销售演示", "企业社交媒体", "客户简报"] as const;
 
 const iso = (day: number, hour = 9) => `2026-07-${String(day).padStart(2, "0")}T${String(hour).padStart(2, "0")}:00:00.000Z`;
 const round = (value: number, digits = 1) => Number(value.toFixed(digits));
@@ -145,18 +145,18 @@ const average = (values: number[]) => values.length ? values.reduce((sum, value)
 const list = (value: string) => value.split("|");
 
 const solutionSeeds = [
-  ["Smart City Operations Hub", "Smart City Operations", "A unified operational view for coordinating urban service incidents and cross-department response.", "Urban teams often coordinate incidents across fragmented systems and reporting lines.", "Unified operational dashboard|Incident coordination workspace|Configurable service workflows", "Operations centres|Urban service teams", "Faster operational visibility|Clearer cross-team coordination", "API-oriented integration pattern|Role-based information views", "Designed as a fictional demonstration concept for a municipal operations coordination scenario."],
-  ["Urban Data Exchange", "Urban Data Platform", "A governed data-sharing foundation for reusable urban information products.", "Departments need to share data while preserving ownership, quality controls and traceability.", "Data catalogue|Access workflow|Quality monitoring", "Data offices|Department data stewards", "Reduced discovery effort|More consistent data governance", "Metadata-led catalogue|Auditable access controls", "Fictional reference architecture for governed inter-department data exchange."],
-  ["One-Stop Citizen Service", "Digital Government Services", "A service-orchestration concept that simplifies discovery and completion of public-service journeys.", "Citizens can face fragmented service entry points and repeated information requests.", "Service journey design|Unified status view|Assisted service routing", "Public-service centres|Service design teams", "Simpler journeys|More transparent service progress", "Composable service modules|Accessible web interfaces", "Fictional demonstration solution; not connected to a live government service."],
-  ["Mobility Coordination Platform", "Smart Transportation", "A shared operational layer for analysing mobility signals and coordinating transport responses.", "Transport operators need a consistent view across congestion, incidents and service capacity.", "Mobility monitoring|Incident workflow|Planning dashboards", "Transport authorities|Mobility operators", "Quicker coordination|Evidence-led planning", "Streaming-data ready architecture|Geospatial analysis interface", "Fictional smart-transport scenario for product demonstration."],
-  ["Connected Community Workspace", "Smart Community", "A neighbourhood service workspace connecting requests, facilities and community operations.", "Community teams manage service requests across disconnected channels and manual registers.", "Request intake|Service routing|Community dashboard", "Community operators|Property service teams", "Clearer service ownership|More responsive operations", "Configurable workflows|Mobile-responsive task views", "Fictional community-operations demonstration concept."],
-  ["Urban Governance Command View", "Urban Governance", "A decision-support view for prioritising urban governance cases and monitoring resolution.", "Leaders need concise, traceable oversight without relying on manually consolidated reports.", "Case prioritisation|Outcome tracking|Leadership briefings", "Governance offices|District operations teams", "Better oversight|More consistent follow-through", "Event-driven case model|Configurable indicators", "Fictional governance workflow; metrics shown are demonstration records only."],
-  ["Enterprise Service Digitisation Kit", "Enterprise Digitalisation", "A modular workflow toolkit for digitising repeatable enterprise service processes.", "Growing organisations often rely on spreadsheets and disconnected approval processes.", "Workflow templates|Approval routing|Operational reporting", "Enterprise operations|Shared-service teams", "Reduced manual coordination|Improved process visibility", "Modular workflow engine|Standards-based interfaces", "Fictional enterprise transformation package for demonstration."],
-  ["Trusted Data Governance Console", "Data Governance", "A governance workspace for data ownership, quality rules and issue remediation.", "Data teams need practical controls that connect policies to daily issue resolution.", "Ownership register|Quality rules|Issue workflow", "Data governance offices|Data engineering teams", "Clear accountability|More reliable operational data", "Policy-to-control mapping|Lineage-ready metadata model", "Fictional data-governance solution concept."],
-  ["Inclusive Public Service Portal", "Public-Service Digitalisation", "An accessible digital front door for public information and assisted service navigation.", "People need consistent access to service information across devices and accessibility needs.", "Accessible content|Guided navigation|Service directory", "Service owners|Public contact teams", "Improved discoverability|More inclusive access", "Accessibility-first component system|Structured content model", "Fictional public-service portal demonstration."],
-  ["Government Service Copilot", "AI-assisted Government Services", "A human-supervised assistant for drafting service responses from approved knowledge.", "Service teams spend time locating approved information and structuring routine responses.", "Grounded answer drafting|Source references|Human approval queue", "Service agents|Knowledge managers", "Faster drafting|More consistent information use", "Retrieval-grounded generation pattern|Review and audit trail", "Fictional AI assistant concept; no live government knowledge or citizen data is included."],
-  ["Project Delivery Control Tower", "Digital Government Services", "A portfolio view for monitoring milestones, dependencies and delivery risks.", "Multi-party digital projects need shared progress visibility and early risk escalation.", "Milestone tracking|Dependency map|Risk workflow", "Programme offices|Delivery partners", "Earlier risk visibility|Clearer delivery accountability", "Portfolio data model|Configurable governance gates", "Fictional project-delivery demonstration solution."],
-  ["City Asset Intelligence Register", "Smart City Operations", "A governed register for discovering assets, maintenance context and ownership.", "Asset information can be duplicated across systems and difficult to reconcile.", "Asset catalogue|Ownership mapping|Maintenance context", "Asset managers|Operations teams", "Improved asset visibility|More coordinated maintenance planning", "Extensible asset schema|Integration-ready identifiers", "Fictional city-asset management concept for demonstration."],
+  ["智慧城市运行协同中心", "智慧城市运营", "面向城市服务事件与跨部门响应的一体化运行视图。", "城市运行团队往往需要在分散系统与不同汇报链路之间协调事件处置。", "统一运行看板|事件协同工作台|可配置服务流程", "城市运行中心|城市服务团队", "提升运行可视性|加强跨团队协同", "面向 API 的集成模式|基于角色的信息视图", "用于市级运行协同场景的虚构演示方案。"],
+  ["城市数据共享平台", "城市数据平台", "面向可复用城市数据产品的规范化数据共享基础。", "各部门需要在保留数据权属、质量控制与可追溯性的前提下开展数据共享。", "数据目录|访问申请流程|质量监测", "大数据管理部门|部门数据专员", "降低数据查找成本|提升数据治理一致性", "元数据驱动目录|可审计访问控制", "用于跨部门数据共享的虚构参考架构。"],
+  ["一站式政务服务平台", "数字政务服务", "简化公共服务事项查找与办理流程的服务编排方案。", "公众可能面对服务入口分散、信息重复提交等问题。", "服务旅程设计|统一进度视图|智能服务导引", "政务服务中心|服务设计团队", "简化办事流程|提升服务进度透明度", "可组合服务模块|无障碍 Web 界面", "虚构演示方案，未连接任何真实政务服务。"],
+  ["城市交通协同平台", "智慧交通", "用于分析交通运行信号并协调交通响应的共享运营层。", "交通管理与运营单位需要统一查看拥堵、事件和运力情况。", "交通运行监测|事件处置流程|规划分析看板", "交通主管部门|交通运营单位", "加快协同响应|支持数据驱动规划", "流式数据架构|地理空间分析界面", "用于产品演示的虚构智慧交通场景。"],
+  ["智慧社区协同工作台", "智慧社区", "连接居民诉求、公共设施和社区运营的基层服务工作台。", "社区团队常通过分散渠道与人工台账管理服务诉求。", "诉求受理|服务分派|社区运营看板", "社区运营人员|物业服务团队", "明确服务责任|提升响应效率", "可配置工作流|移动端响应式任务视图", "虚构的社区运营演示方案。"],
+  ["城市治理指挥视图", "城市治理", "支持治理案件优先级判断与处置跟踪的决策视图。", "管理人员需要简明、可追溯的治理视图，减少对人工汇总报告的依赖。", "案件优先级管理|处置结果跟踪|领导驾驶舱", "城市治理部门|区县运行团队", "提升治理监督效率|加强处置闭环", "事件驱动案件模型|可配置指标", "虚构治理流程，页面指标仅为演示记录。"],
+  ["企业服务数字化工具包", "企业数字化", "用于数字化改造重复性企业服务流程的模块化工具包。", "成长型企业常依赖表格和相互割裂的审批流程。", "流程模板|审批路由|运营报表", "企业运营部门|共享服务团队", "减少人工协调|提升流程透明度", "模块化流程引擎|标准化接口", "用于演示的虚构企业转型方案。"],
+  ["可信数据治理工作台", "数据治理", "连接数据权责、质量规则与问题整改的数据治理工作台。", "数据团队需要将治理制度落实到日常问题处置中的实用工具。", "权责登记|质量规则|问题整改流程", "数据治理部门|数据工程团队", "明确数据责任|提升运营数据可靠性", "制度到控制点映射|支持血缘的元数据模型", "虚构数据治理方案。"],
+  ["普惠公共服务门户", "公共服务数字化", "面向公共信息查询与辅助服务导引的无障碍数字入口。", "公众需要在不同设备与无障碍需求下获得一致的服务信息。", "无障碍内容|引导式导航|服务目录", "公共服务主管部门|公众联络团队", "提升服务可发现性|扩大普惠服务覆盖", "无障碍优先组件体系|结构化内容模型", "虚构公共服务门户演示方案。"],
+  ["政务服务智能助手", "AI 辅助政务服务", "基于已审核知识、由人工监督的政务服务答复起草助手。", "服务人员需要花费时间查找已批准信息并组织常规答复。", "基于知识的答复起草|来源引用|人工审核队列", "政务服务人员|知识管理人员", "加快答复起草|提升信息使用一致性", "检索增强生成模式|审核与审计轨迹", "虚构 AI 助手方案，不包含真实政务知识或公民数据。"],
+  ["项目交付管控中心", "数字政务服务", "用于监测里程碑、依赖关系和交付风险的项目组合视图。", "多方参与的数字化项目需要共享进度并提前上报风险。", "里程碑跟踪|依赖关系图|风险处置流程", "项目管理办公室|交付合作伙伴", "提前识别风险|明确交付责任", "项目组合数据模型|可配置治理关口", "虚构项目交付管理演示方案。"],
+  ["城市资产智能台账", "智慧城市运营", "用于查询资产、维护场景和权属信息的规范化城市资产台账。", "资产信息可能分散于不同系统，存在重复且难以核对的问题。", "资产目录|权属映射|维护信息管理", "资产管理人员|城市运行团队", "提升资产可见性|加强维护计划协同", "可扩展资产数据模型|集成就绪标识体系", "用于演示的虚构城市资产管理方案。"],
 ] as const;
 
 export const DEMO_SOLUTIONS: Solution[] = solutionSeeds.map((seed, index) => ({
@@ -170,17 +170,17 @@ export const DEMO_SOLUTIONS: Solution[] = solutionSeeds.map((seed, index) => ({
   business_value: list(seed[6]),
   technical_highlights: list(seed[7]),
   implementation_context: seed[8],
-  source_reference: "EchoFlow fictional demo dataset v2 — not Digital Zhengzhou internal product data",
+  source_reference: "EchoFlow 虚构演示数据集 v2——并非数字郑州内部产品数据",
   created_at: iso(1),
   updated_at: iso(1),
 }));
 
 export const DEMO_STAKEHOLDERS: Stakeholder[] = [
-  { stakeholder_id: "STK-GOV", name: "Government Decision Maker", goals: ["Demonstrate public value", "Improve governance outcomes"], pain_points: ["Fragmented oversight", "Implementation uncertainty"], information_needs: ["Public value", "Feasibility", "Governance impact"], messaging_priority: ["Outcomes", "Efficiency", "Implementation confidence"], technical_depth: "Low", preferred_tone: "Strategic, accountable and outcome-led", cta: "Schedule an executive solution briefing", risk_concerns: ["Delivery risk", "Public accountability", "Unsupported claims"] },
-  { stakeholder_id: "STK-PROC", name: "Procurement / Project Stakeholder", goals: ["Define an evaluable scope", "Control delivery risk"], pain_points: ["Ambiguous requirements", "Supplier dependency"], information_needs: ["Scope", "Implementation stages", "Acceptance approach"], messaging_priority: ["Deliverables", "Governance", "Practical rollout"], technical_depth: "Medium", preferred_tone: "Precise, structured and implementation-aware", cta: "Request a scoped discovery workshop", risk_concerns: ["Compliance", "Budget control", "Operational continuity"] },
-  { stakeholder_id: "STK-ENT", name: "Enterprise Client", goals: ["Improve operations", "Build a credible business case"], pain_points: ["Manual coordination", "Unclear adoption value"], information_needs: ["Operational impact", "ROI logic", "Adoption pathway"], messaging_priority: ["Business value", "Time to value", "User adoption"], technical_depth: "Medium", preferred_tone: "Commercial, practical and benefit-led", cta: "Explore a use-case assessment", risk_concerns: ["Adoption", "Integration effort", "Value realisation"] },
-  { stakeholder_id: "STK-TECH", name: "Technical Decision Maker", goals: ["Protect architectural integrity", "Ensure scalable delivery"], pain_points: ["Legacy integration", "Data and security risk"], information_needs: ["Architecture", "Integration", "Scalability", "Data governance"], messaging_priority: ["Technical fit", "Security", "Interoperability"], technical_depth: "High", preferred_tone: "Evidence-led, specific and technically rigorous", cta: "Review the reference architecture", risk_concerns: ["Security", "Maintainability", "Vendor lock-in"] },
-  { stakeholder_id: "STK-PART", name: "Industry / Ecosystem Partner", goals: ["Identify complementary value", "Clarify delivery roles"], pain_points: ["Unclear interfaces", "Overlapping responsibilities"], information_needs: ["Partner model", "Integration boundaries", "Joint value"], messaging_priority: ["Ecosystem fit", "Collaboration model", "Shared outcomes"], technical_depth: "Medium", preferred_tone: "Collaborative, credible and opportunity-led", cta: "Discuss a joint solution workshop", risk_concerns: ["Role clarity", "Data boundaries", "Commercial alignment"] },
+  { stakeholder_id: "STK-GOV", name: "政府决策者", goals: ["体现公共价值", "提升治理成效"], pain_points: ["监督信息分散", "实施可行性不明确"], information_needs: ["公共价值", "可实施性", "治理影响"], messaging_priority: ["治理成效", "运行效率", "实施信心"], technical_depth: "低", preferred_tone: "战略清晰、责任明确、结果导向", cta: "预约管理层方案汇报", risk_concerns: ["交付风险", "公共责任", "缺乏依据的表述"] },
+  { stakeholder_id: "STK-PROC", name: "采购 / 项目负责人", goals: ["形成可评估的项目范围", "控制交付风险"], pain_points: ["需求边界模糊", "供应商依赖"], information_needs: ["项目范围", "实施阶段", "验收方式"], messaging_priority: ["交付成果", "项目治理", "落地路径"], technical_depth: "中", preferred_tone: "精准、结构化、关注实施", cta: "申请项目范围梳理工作坊", risk_concerns: ["合规性", "预算控制", "业务连续性"] },
+  { stakeholder_id: "STK-ENT", name: "企业客户", goals: ["改善运营效率", "建立可信商业论证"], pain_points: ["人工协调成本高", "应用价值不明确"], information_needs: ["运营影响", "投入产出逻辑", "应用推广路径"], messaging_priority: ["业务价值", "价值实现速度", "用户采纳"], technical_depth: "中", preferred_tone: "商业化、务实、价值导向", cta: "开展业务场景评估", risk_concerns: ["用户采纳", "集成成本", "价值兑现"] },
+  { stakeholder_id: "STK-TECH", name: "技术决策者", goals: ["保障架构完整性", "确保可扩展交付"], pain_points: ["遗留系统集成", "数据与安全风险"], information_needs: ["系统架构", "集成方式", "扩展能力", "数据治理"], messaging_priority: ["技术适配", "安全保障", "互操作性"], technical_depth: "高", preferred_tone: "基于证据、具体严谨、技术清晰", cta: "评审参考架构", risk_concerns: ["安全性", "可维护性", "供应商锁定"] },
+  { stakeholder_id: "STK-PART", name: "行业 / 生态合作伙伴", goals: ["识别互补价值", "明确交付分工"], pain_points: ["接口边界不清", "职责范围重叠"], information_needs: ["合作模式", "集成边界", "联合价值"], messaging_priority: ["生态适配", "协作模式", "共同成果"], technical_depth: "中", preferred_tone: "协作、可信、机会导向", cta: "讨论联合方案工作坊", risk_concerns: ["角色分工", "数据边界", "商业协同"] },
 ];
 
 export function createStrategy(solution: Solution, stakeholder: Stakeholder, objective: string, contentType: string, id = `STR-${Date.now()}`): MessagingStrategy {
@@ -190,19 +190,19 @@ export function createStrategy(solution: Solution, stakeholder: Stakeholder, obj
     stakeholder_id: stakeholder.stakeholder_id,
     marketing_objective: objective,
     content_type: contentType,
-    core_value_proposition: `${solution.solution_name} gives ${stakeholder.name.toLowerCase()} a structured way to address ${solution.business_problem.toLowerCase()}`,
-    key_messages: [solution.business_value[0], solution.key_capabilities[0], `Designed around ${stakeholder.messaging_priority[0].toLowerCase()} and ${stakeholder.messaging_priority[1].toLowerCase()}.`],
-    supporting_proof_points: [`Supplied capability: ${solution.key_capabilities[0]}`, `Supplied technical highlight: ${solution.technical_highlights[0]}`, `Implementation context: ${solution.implementation_context}`],
+    core_value_proposition: `${solution.solution_name}为${stakeholder.name}提供结构化路径，帮助解决“${solution.business_problem}”这一业务问题。`,
+    key_messages: [solution.business_value[0], solution.key_capabilities[0], `围绕${stakeholder.messaging_priority[0]}与${stakeholder.messaging_priority[1]}组织信息表达。`],
+    supporting_proof_points: [`已提供的方案能力：${solution.key_capabilities[0]}`, `已提供的技术亮点：${solution.technical_highlights[0]}`, `实施场景：${solution.implementation_context}`],
     recommended_tone: stakeholder.preferred_tone,
     cta: stakeholder.cta,
-    content_angle: `${objective} through ${stakeholder.messaging_priority.slice(0, 2).join(" and ").toLowerCase()}`,
+    content_angle: `围绕${stakeholder.messaging_priority.slice(0, 2).join("与")}实现“${objective}”`,
     updated_at: new Date().toISOString(),
   };
 }
 
 export function generateDemoCopy(solution: Solution, stakeholder: Stakeholder, strategy: MessagingStrategy) {
-  const title = `${solution.solution_name}: ${strategy.key_messages[0]}`;
-  const content = `${solution.short_description}\n\nFor ${stakeholder.name.toLowerCase()} teams, the priority is ${stakeholder.messaging_priority.slice(0, 2).join(" and ").toLowerCase()}. EchoFlow uses only the supplied solution record: the concept includes ${solution.key_capabilities.slice(0, 3).join(", ").toLowerCase()}. Its stated business value is ${solution.business_value.join(" and ").toLowerCase()}.\n\nImplementation context: ${solution.implementation_context}\n\nRecommended next step: ${strategy.cta}.\n\nEvidence note: This draft is generated from a fictional demonstration record. Validate every external claim before use; no statistics, clients, government partnerships or production capabilities have been inferred.`;
+  const title = `${solution.solution_name}：${strategy.key_messages[0]}`;
+  const content = `${solution.short_description}\n\n对于${stakeholder.name}，重点应放在${stakeholder.messaging_priority.slice(0, 2).join("与")}。EchoFlow 仅使用已提供的方案记录生成内容：该方案包含${solution.key_capabilities.slice(0, 3).join("、")}，已记录的业务价值为${solution.business_value.join("与")}。\n\n实施场景：${solution.implementation_context}\n\n建议下一步：${strategy.cta}。\n\n事实说明：本初稿根据虚构演示记录生成。对外使用前必须核验所有表述；系统没有推断或虚构统计数据、客户案例、政府合作关系或生产环境能力。`;
   return { title, content };
 }
 
@@ -245,7 +245,7 @@ export function applyReviewDecision(workspace: Workspace, draftId: string, decis
   return {
     ...workspace,
     assets: workspace.assets.map((asset) => asset.draft_id === draftId ? { ...asset, review_status: nextStatus, approved_first_pass: asset.approved_first_pass ?? (decision === "approved" && asset.edit_count === 0), review_time_minutes: duration, finalised_at: nextStatus === "final" ? occurredAt : asset.finalised_at } : asset),
-    reviews: [{ review_id: `REV-${Date.now()}`, draft_id: draftId, action: decision, occurred_at: occurredAt, duration_minutes: duration, note: `${nextStatus} through human review.` }, ...workspace.reviews],
+    reviews: [{ review_id: `REV-${Date.now()}`, draft_id: draftId, action: decision, occurred_at: occurredAt, duration_minutes: duration, note: `人工审核已将内容更新为${nextStatus === "approved" ? "已批准" : nextStatus === "rejected" ? "已驳回" : "已定稿"}状态。` }, ...workspace.reviews],
   };
 }
 
@@ -254,7 +254,7 @@ export function applyContentEdit(workspace: Workspace, draftId: string, title: s
   return {
     ...workspace,
     assets: workspace.assets.map((asset) => asset.draft_id === draftId ? { ...asset, title: title.trim(), content: content.trim(), edit_count: asset.edit_count + 1, version: asset.version + 1, review_status: "in_review", approved_first_pass: asset.approved_first_pass ?? false } : asset),
-    reviews: [{ review_id: `REV-${Date.now()}`, draft_id: draftId, action: "edited", occurred_at: occurredAt, duration_minutes: 3, note: "Content edited during human review." }, ...workspace.reviews],
+    reviews: [{ review_id: `REV-${Date.now()}`, draft_id: draftId, action: "edited", occurred_at: occurredAt, duration_minutes: 3, note: "内容已在人工审核环节完成编辑。" }, ...workspace.reviews],
   };
 }
 
@@ -308,7 +308,7 @@ export function buildDemoWorkspace(): Workspace {
           version: 1 + editCount,
         });
         if (reviewed) {
-          reviews.push({ review_id: `REV-${String(assetIndex).padStart(4, "0")}`, draft_id: draftId, action: approved ? "approved" : "rejected", occurred_at: iso(3 + (assetIndex % 23), 14), duration_minutes: 5 + (assetIndex % 13), note: firstPass ? "Approved without edits in evaluation run." : approved ? "Approved after evidence-language edit." : "Returned for unsupported or unclear wording." });
+          reviews.push({ review_id: `REV-${String(assetIndex).padStart(4, "0")}`, draft_id: draftId, action: approved ? "approved" : "rejected", occurred_at: iso(3 + (assetIndex % 23), 14), duration_minutes: 5 + (assetIndex % 13), note: firstPass ? "评估中未修改即通过。" : approved ? "调整证据表述后通过。" : "因表述缺少依据或不够清晰而退回。" });
         }
         const manual = 34 + (assetIndex % 27);
         benchmarks.push(makeBenchmark({ benchmark_id: `BM-${String(assetIndex).padStart(4, "0")}`, solution_id: solution.solution_id, stakeholder_id: stakeholder.stakeholder_id, content_type: contentType, manual_minutes: manual, ai_generation_minutes: round((7 + (assetIndex % 19)) / 60, 2), ai_review_minutes: reviewed ? 5 + (assetIndex % 13) : 8, ai_edit_minutes: editCount * (3 + (assetIndex % 4)), timestamp: generatedAt }));
@@ -316,7 +316,7 @@ export function buildDemoWorkspace(): Workspace {
     }
   }
 
-  return { schema_version: 2, solutions: DEMO_SOLUTIONS, stakeholders: DEMO_STAKEHOLDERS, strategies, assets, reviews, benchmarks, settings: { generation_mode: "demo", model: "gpt-5.6-luna" } };
+  return { schema_version: 3, solutions: DEMO_SOLUTIONS, stakeholders: DEMO_STAKEHOLDERS, strategies, assets, reviews, benchmarks, settings: { generation_mode: "demo", model: "gpt-5.6-luna" } };
 }
 
 export function groupCount<T>(items: T[], getKey: (item: T) => string) {
@@ -342,5 +342,5 @@ export function exportFiles(workspace: Workspace) {
 export function isWorkspace(value: unknown): value is Workspace {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<Workspace>;
-  return candidate.schema_version === 2 && Array.isArray(candidate.solutions) && Array.isArray(candidate.stakeholders) && Array.isArray(candidate.assets) && Array.isArray(candidate.reviews) && Array.isArray(candidate.benchmarks);
+  return candidate.schema_version === 3 && Array.isArray(candidate.solutions) && Array.isArray(candidate.stakeholders) && Array.isArray(candidate.assets) && Array.isArray(candidate.reviews) && Array.isArray(candidate.benchmarks);
 }

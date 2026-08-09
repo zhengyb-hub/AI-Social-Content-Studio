@@ -9,7 +9,7 @@ function validKey(value: string | null) {
 export async function GET(request: Request) {
   const key = new URL(request.url).searchParams.get("key");
   if (!validKey(key)) {
-    return Response.json({ error: "A valid state key is required." }, { status: 400 });
+    return Response.json({ error: "必须提供有效的状态键。" }, { status: 400 });
   }
 
   try {
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
       updatedAt: row?.updatedAt ?? null,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to read state.";
+    const message = error instanceof Error ? error.message : "无法读取工作区状态。";
     return Response.json({ error: message }, { status: 500 });
   }
 }
@@ -35,12 +35,12 @@ export async function PUT(request: Request) {
   try {
     const payload = (await request.json()) as { key?: string; value?: unknown };
     if (!validKey(payload.key ?? null)) {
-      return Response.json({ error: "A valid state key is required." }, { status: 400 });
+      return Response.json({ error: "必须提供有效的状态键。" }, { status: 400 });
     }
 
     const encoded = JSON.stringify(payload.value);
     if (encoded.length > 200_000) {
-      return Response.json({ error: "State payload is too large." }, { status: 413 });
+      return Response.json({ error: "工作区状态数据过大。" }, { status: 413 });
     }
 
     const db = getDb();
@@ -55,7 +55,7 @@ export async function PUT(request: Request) {
 
     return Response.json({ ok: true, updatedAt: now });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to save state.";
+    const message = error instanceof Error ? error.message : "无法保存工作区状态。";
     return Response.json({ error: message }, { status: 500 });
   }
 }
