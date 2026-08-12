@@ -10,6 +10,8 @@ function extractText(payload: unknown) {
 }
 
 export async function POST(request: Request) {
+  const origin = request.headers.get("origin");
+  if (origin && origin !== new URL(request.url).origin) return Response.json({ error: "不允许跨站调用生成接口。" }, { status: 403, headers: { "cache-control": "no-store" } });
   const contentLength = Number(request.headers.get("content-length") ?? 0);
   if (contentLength > 64_000) return Response.json({ error: "生成请求数据过大。" }, { status: 413, headers: { "cache-control": "no-store" } });
   let body: GenerationRequest;

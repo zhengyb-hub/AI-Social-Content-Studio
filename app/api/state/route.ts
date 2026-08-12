@@ -1,9 +1,16 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { workspaceState } from "../../../db/schema";
+import { normaliseWorkspace } from "../../lib/echoflow";
 
+const WORKSPACE_KEY = "solution-marketing-workspace";
 function validKey(value: string | null) {
-  return Boolean(value && /^[a-z0-9_-]{1,64}$/i.test(value));
+  return value === WORKSPACE_KEY;
+}
+
+function sameOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  return !origin || origin === new URL(request.url).origin;
 }
 
 export async function GET(request: Request) {
@@ -25,14 +32,14 @@ export async function GET(request: Request) {
       value: row ? JSON.parse(row.value) : null,
       updatedAt: row?.updatedAt ?? null,
     }, { headers: { "cache-control": "no-store" } });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "无法读取工作区状态。";
-    return Response.json({ error: message }, { status: 500 });
+  } catch {
+    return Response.json({ error: "暂时无法读取工作区，请稍后重试。" }, { status: 500, headers: { "cache-control": "no-store" } });
   }
 }
 
 export async function PUT(request: Request) {
   try {
+    if (!sameOrigin(request)) return Response.json({ error: "不允许跨站写入工作区。" }, { status: 403, headers: { "cache-control": "no-store" } });
     const contentLength = Number(request.headers.get("content-length") ?? 0);
     if (contentLength > 1_000_000) return Response.json({ error: "工作区状态数据过大。" }, { status: 413, headers: { "cache-control": "no-store" } });
     const payload = (await request.json()) as { key?: string; value?: unknown; expectedUpdatedAt?: string | null };
@@ -40,7 +47,9 @@ export async function PUT(request: Request) {
       return Response.json({ error: "必须提供有效的状态键。" }, { status: 400 });
     }
 
-    const encoded = JSON.stringify(payload.value);
+    const workspace = normaliseWorkspace(payload.value);
+    if (!workspace) return Response.json({ error: "工作区数据结构无效。" }, { status: 422, headers: { "cache-control": "no-store" } });
+    const encoded = JSON.stringify(workspace);
     if (encoded.length > 1_000_000) {
       return Response.json({ error: "工作区状态数据过大。" }, { status: 413 });
     }
@@ -61,8 +70,7 @@ export async function PUT(request: Request) {
       });
 
     return Response.json({ ok: true, updatedAt: now }, { headers: { "cache-control": "no-store" } });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "无法保存工作区状态。";
-    return Response.json({ error: message }, { status: 500 });
+  } catch {
+    return Response.json({ error: "暂时无法保存工作区，请稍后重试。" }, { status: 500, headers: { "cache-control": "no-store" } });
   }
 }

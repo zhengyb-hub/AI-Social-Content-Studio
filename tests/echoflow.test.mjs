@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   applyContentEdit,
+  advanceCampaign,
   applyReuse,
   applyReviewDecision,
   buildDemoWorkspace,
@@ -11,6 +12,7 @@ import {
   generateDemoCopy,
   isWorkspace,
   makeBenchmark,
+  normaliseWorkspace,
   scoreContent,
 } from "../app/lib/echoflow.ts";
 import { demoFallbackReason, isGenerationRequest } from "../app/lib/generation.ts";
@@ -64,12 +66,41 @@ test("records approve, reject, edit and reuse workflow actions", () => {
   assert.equal(workspace.assets.find((asset) => asset.draft_id === draft.draft_id).approved_first_pass, true);
   workspace = applyReuse(workspace, draft.draft_id, "项目建议书");
   assert.equal(workspace.assets.find((asset) => asset.draft_id === draft.draft_id).reuse_count, 1);
+  assert.equal(workspace.reviews[0].action, "reused");
   workspace = applyContentEdit(workspace, draft.draft_id, "已编辑标题", "已编辑并完成证据核验的内容。");
   const edited = workspace.assets.find((asset) => asset.draft_id === draft.draft_id);
   assert.equal(edited.review_status, "in_review");
   assert.ok(edited.edit_count > 0);
   workspace = applyReviewDecision(workspace, draft.draft_id, "rejected");
   assert.equal(workspace.assets.find((asset) => asset.draft_id === draft.draft_id).review_status, "rejected");
+});
+
+test("captures reviewer notes and advances campaign lifecycle", () => {
+  let workspace = buildDemoWorkspace();
+  const rejected = workspace.assets.find((asset) => asset.review_status === "rejected");
+  assert.ok(rejected);
+  workspace = applyReviewDecision(workspace, rejected.draft_id, "rejected", "2026-08-12T10:00:00.000Z", "请补充实施依据。" );
+  assert.equal(workspace.reviews[0].note, "请补充实施依据。");
+  assert.equal(workspace.reviews[0].actor, "内容审核员");
+  const planning = workspace.campaigns.find((campaign) => campaign.status === "planning");
+  assert.ok(planning);
+  workspace = advanceCampaign(workspace, planning.campaign_id);
+  assert.equal(workspace.campaigns.find((campaign) => campaign.campaign_id === planning.campaign_id).status, "active");
+});
+
+test("migrates legacy workspaces without discarding content", () => {
+  const current = buildDemoWorkspace();
+  const legacy = structuredClone(current);
+  legacy.schema_version = 3;
+  delete legacy.brand;
+  delete legacy.campaigns;
+  delete legacy.settings.default_review_required;
+  legacy.assets.forEach((asset) => { delete asset.campaign_id; delete asset.channel; delete asset.quality_score; delete asset.compliance_score; });
+  const migrated = normaliseWorkspace(legacy);
+  assert.ok(migrated);
+  assert.equal(migrated.schema_version, 4);
+  assert.equal(migrated.assets.length, current.assets.length);
+  assert.ok(migrated.assets.every((asset) => asset.campaign_id && asset.channel));
 });
 
 test("validates state and exports all evidence files", () => {

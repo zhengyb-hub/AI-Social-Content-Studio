@@ -95,10 +95,11 @@ export type ContentAsset = {
 export type ReviewEvent = {
   review_id: string;
   draft_id: string;
-  action: "submitted" | "approved" | "rejected" | "edited" | "regenerated" | "finalised";
+  action: "submitted" | "approved" | "rejected" | "edited" | "regenerated" | "finalised" | "reused";
   occurred_at: string;
   duration_minutes: number;
   note: string;
+  actor?: string;
 };
 
 export type BenchmarkRecord = {
@@ -295,14 +296,14 @@ export function calculateAnalytics(workspace: Workspace): Analytics {
     manual_adaptation_time: round(average(workspace.benchmarks.map((benchmark) => benchmark.manual_minutes)), 1),
     ai_adaptation_time: round(average(workspace.benchmarks.map((benchmark) => benchmark.total_ai_minutes)), 1),
     time_reduction_rate: round(average(workspace.benchmarks.map((benchmark) => benchmark.time_reduction_percentage)), 1),
-    pending_review_count: workspace.assets.filter((asset) => asset.review_status === "in_review").length,
+    pending_review_count: workspace.assets.filter((asset) => asset.review_status === "in_review" || asset.review_status === "rejected").length,
     active_campaign_count: workspace.campaigns.filter((campaign) => campaign.status === "active" || campaign.status === "review").length,
     average_quality_score: round(average(workspace.assets.map((asset) => asset.quality_score)), 1),
     compliance_pass_rate: round((compliant.length / Math.max(workspace.assets.length, 1)) * 100, 1),
   };
 }
 
-export function applyReviewDecision(workspace: Workspace, draftId: string, decision: "approved" | "rejected" | "finalised", occurredAt = new Date().toISOString()): Workspace {
+export function applyReviewDecision(workspace: Workspace, draftId: string, decision: "approved" | "rejected" | "finalised", occurredAt = new Date().toISOString(), reviewerNote = ""): Workspace {
   const current = workspace.assets.find((asset) => asset.draft_id === draftId);
   if (!current) return workspace;
   const nextStatus: ReviewStatus = decision === "finalised" ? "final" : decision;
@@ -310,7 +311,7 @@ export function applyReviewDecision(workspace: Workspace, draftId: string, decis
   return {
     ...workspace,
     assets: workspace.assets.map((asset) => asset.draft_id === draftId ? { ...asset, review_status: nextStatus, approved_first_pass: asset.approved_first_pass ?? (decision === "approved" && asset.edit_count === 0), review_time_minutes: duration, finalised_at: nextStatus === "final" ? occurredAt : asset.finalised_at } : asset),
-    reviews: [{ review_id: `REV-${Date.now()}`, draft_id: draftId, action: decision, occurred_at: occurredAt, duration_minutes: duration, note: `人工审核已将内容更新为${nextStatus === "approved" ? "已批准" : nextStatus === "rejected" ? "已驳回" : "已定稿"}状态。` }, ...workspace.reviews],
+    reviews: [{ review_id: `REV-${Date.now()}`, draft_id: draftId, action: decision, occurred_at: occurredAt, duration_minutes: duration, note: reviewerNote.trim() || `人工审核已将内容更新为${nextStatus === "approved" ? "已批准" : nextStatus === "rejected" ? "已驳回" : "已定稿"}状态。`, actor: "内容审核员" }, ...workspace.reviews],
   };
 }
 
@@ -325,7 +326,25 @@ export function applyContentEdit(workspace: Workspace, draftId: string, title: s
 
 export function applyReuse(workspace: Workspace, draftId: string, context: string): Workspace {
   if (!context.trim()) return workspace;
-  return { ...workspace, assets: workspace.assets.map((asset) => asset.draft_id === draftId && (asset.review_status === "approved" || asset.review_status === "final") ? { ...asset, reuse_count: asset.reuse_count + 1, reuse_context: [...asset.reuse_context, context] } : asset) };
+  const current = workspace.assets.find((asset) => asset.draft_id === draftId);
+  if (!current || !["approved", "final"].includes(current.review_status)) return workspace;
+  return {
+    ...workspace,
+    assets: workspace.assets.map((asset) => asset.draft_id === draftId ? { ...asset, reuse_count: asset.reuse_count + 1, reuse_context: [...asset.reuse_context, context] } : asset),
+    reviews: [{ review_id: `REV-${Date.now()}`, draft_id: draftId, action: "reused", occurred_at: new Date().toISOString(), duration_minutes: 0, note: `已复用于“${context}”场景。`, actor: "内容运营员" }, ...workspace.reviews],
+  };
+}
+
+export function advanceCampaign(workspace: Workspace, campaignId: string): Workspace {
+  const order: CampaignStatus[] = ["planning", "active", "review", "complete"];
+  return {
+    ...workspace,
+    campaigns: workspace.campaigns.map((campaign) => {
+      if (campaign.campaign_id !== campaignId) return campaign;
+      const next = order[Math.min(order.indexOf(campaign.status) + 1, order.length - 1)];
+      return { ...campaign, status: next };
+    }),
+  };
 }
 
 export function buildDemoWorkspace(): Workspace {
@@ -416,4 +435,46 @@ export function isWorkspace(value: unknown): value is Workspace {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<Workspace>;
   return candidate.schema_version === 4 && Boolean(candidate.brand) && Array.isArray(candidate.campaigns) && Array.isArray(candidate.solutions) && Array.isArray(candidate.stakeholders) && Array.isArray(candidate.assets) && Array.isArray(candidate.reviews) && Array.isArray(candidate.benchmarks);
+}
+
+export function normaliseWorkspace(value: unknown): Workspace | null {
+  if (isWorkspace(value)) return value;
+  if (!value || typeof value !== "object") return null;
+  const legacy = value as {
+    schema_version?: number;
+    solutions?: Solution[];
+    stakeholders?: Stakeholder[];
+    strategies?: MessagingStrategy[];
+    assets?: Array<Partial<ContentAsset> & Pick<ContentAsset, "content">>;
+    reviews?: ReviewEvent[];
+    benchmarks?: BenchmarkRecord[];
+    settings?: Partial<Workspace["settings"]>;
+  };
+  if (legacy.schema_version !== 3 || !Array.isArray(legacy.solutions) || !Array.isArray(legacy.stakeholders) || !Array.isArray(legacy.assets) || !Array.isArray(legacy.reviews) || !Array.isArray(legacy.benchmarks)) return null;
+  const campaigns = DEMO_CAMPAIGNS.map((campaign) => ({ ...campaign }));
+  const assets = legacy.assets.map((asset, index) => {
+    const content = typeof asset.content === "string" ? asset.content : "";
+    return {
+      ...asset,
+      campaign_id: asset.campaign_id || campaigns[index % campaigns.length].campaign_id,
+      channel: asset.channel || CHANNELS[index % CHANNELS.length],
+      ...scoreContent(content, DEFAULT_BRAND),
+    } as ContentAsset;
+  });
+  return {
+    schema_version: 4,
+    brand: DEFAULT_BRAND,
+    campaigns,
+    solutions: legacy.solutions,
+    stakeholders: legacy.stakeholders,
+    strategies: Array.isArray(legacy.strategies) ? legacy.strategies : [],
+    assets,
+    reviews: legacy.reviews,
+    benchmarks: legacy.benchmarks,
+    settings: {
+      generation_mode: legacy.settings?.generation_mode === "api" ? "api" : "demo",
+      model: legacy.settings?.model || "gpt-5.6-luna",
+      default_review_required: true,
+    },
+  };
 }
