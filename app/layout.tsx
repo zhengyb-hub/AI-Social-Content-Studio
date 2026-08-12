@@ -6,24 +6,24 @@ export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const protocol = requestHeaders.get("x-forwarded-proto") ?? "https";
-  const imageUrl = host ? `${protocol}://${host}/og-solution-marketing-zh.png` : undefined;
+  const imageUrl = host ? `${protocol}://${host}/og.png` : undefined;
 
   return {
-    title: "EchoFlow｜AI 解决方案营销工作台",
-    description: "面向智慧城市与数字政务场景的 AI 辅助解决方案营销、人工审核、内容复用与工作流分析工具。",
+    title: "EchoFlow｜可信 AI 内容运营平台",
+    description: "面向中国本地企业场景的方案知识、AI 创作、人工审核、品牌治理与内容复用工作台。",
     icons: {
       icon: "/favicon.svg",
       shortcut: "/favicon.svg",
     },
     openGraph: {
-      title: "EchoFlow｜AI 解决方案营销工作台",
-      description: "将复杂的智慧城市与数字政务方案转化为面向不同关键角色的专业内容。",
+      title: "EchoFlow｜可信 AI 内容运营平台",
+      description: "连接可信知识、AI 创作、人工审核与跨渠道内容复用。",
       images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630 }] : undefined,
     },
     twitter: {
       card: "summary_large_image",
-      title: "EchoFlow｜AI 解决方案营销工作台",
-      description: "将复杂的智慧城市与数字政务方案转化为面向不同关键角色的专业内容。",
+      title: "EchoFlow｜可信 AI 内容运营平台",
+      description: "连接可信知识、AI 创作、人工审核与跨渠道内容复用。",
       images: imageUrl ? [imageUrl] : undefined,
     },
   };

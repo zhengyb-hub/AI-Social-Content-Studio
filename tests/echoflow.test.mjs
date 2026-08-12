@@ -11,6 +11,7 @@ import {
   generateDemoCopy,
   isWorkspace,
   makeBenchmark,
+  scoreContent,
 } from "../app/lib/echoflow.ts";
 import { demoFallbackReason, isGenerationRequest } from "../app/lib/generation.ts";
 
@@ -19,6 +20,8 @@ test("creates a reproducible, non-claimed evaluation dataset", () => {
   assert.equal(workspace.solutions.length, 12);
   assert.equal(workspace.stakeholders.length, 5);
   assert.equal(workspace.assets.length, 120);
+  assert.equal(workspace.campaigns.length, 4);
+  assert.equal(workspace.schema_version, 4);
   assert.equal(workspace.benchmarks.length, workspace.assets.length);
   assert.ok(workspace.solutions.every((solution) => solution.source_reference.includes("虚构演示")));
 });
@@ -74,7 +77,7 @@ test("validates state and exports all evidence files", () => {
   assert.equal(isWorkspace(workspace), true);
   assert.equal(isWorkspace({ schema_version: 2 }), false);
   const files = exportFiles(workspace);
-  assert.deepEqual(Object.keys(files), ["solutions.csv", "content_assets.csv", "reviews.csv", "benchmarks.csv", "analytics_summary.csv"]);
+  assert.deepEqual(Object.keys(files), ["campaigns.csv", "brand_profile.csv", "solutions.csv", "content_assets.csv", "reviews.csv", "benchmarks.csv", "analytics_summary.csv"]);
   assert.match(files["benchmarks.csv"], /total_ai_minutes/);
   assert.match(files["analytics_summary.csv"], /first_pass_approval_rate/);
 });
@@ -85,8 +88,18 @@ test("generation input validation and missing-key fallback remain safe", () => {
   const solution = workspace.solutions[0];
   const stakeholder = workspace.stakeholders[0];
   const strategy = createStrategy(solution, stakeholder, "建立认知", "解决方案简报");
-  assert.equal(isGenerationRequest({ solution, stakeholder, strategy, requestedMode: "api" }), true);
+  const campaign = workspace.campaigns[0];
+  assert.equal(isGenerationRequest({ solution, stakeholder, strategy, brand: workspace.brand, campaign, channel: "客户简报", requestedMode: "api" }), true);
+  assert.equal(isGenerationRequest({ solution, stakeholder, strategy, brand: workspace.brand, campaign, channel: "" }), false);
   assert.equal(demoFallbackReason("api", undefined), "missing_api_key");
   assert.equal(demoFallbackReason("api", "configured"), null);
   assert.equal(demoFallbackReason("demo", "configured"), "demo_requested");
+});
+
+test("brand governance scores blocked terms and required disclosure", () => {
+  const workspace = buildDemoWorkspace();
+  const safe = scoreContent(`专业内容。${workspace.brand.required_disclaimer}`, workspace.brand);
+  const risky = scoreContent("这是绝对领先且零风险的方案。", workspace.brand);
+  assert.ok(safe.compliance_score > risky.compliance_score);
+  assert.ok(safe.quality_score >= risky.quality_score);
 });

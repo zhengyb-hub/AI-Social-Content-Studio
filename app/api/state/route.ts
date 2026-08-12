@@ -24,7 +24,7 @@ export async function GET(request: Request) {
       key,
       value: row ? JSON.parse(row.value) : null,
       updatedAt: row?.updatedAt ?? null,
-    });
+    }, { headers: { "cache-control": "no-store" } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "无法读取工作区状态。";
     return Response.json({ error: message }, { status: 500 });
@@ -33,17 +33,24 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const payload = (await request.json()) as { key?: string; value?: unknown };
+    const contentLength = Number(request.headers.get("content-length") ?? 0);
+    if (contentLength > 1_000_000) return Response.json({ error: "工作区状态数据过大。" }, { status: 413, headers: { "cache-control": "no-store" } });
+    const payload = (await request.json()) as { key?: string; value?: unknown; expectedUpdatedAt?: string | null };
     if (!validKey(payload.key ?? null)) {
       return Response.json({ error: "必须提供有效的状态键。" }, { status: 400 });
     }
 
     const encoded = JSON.stringify(payload.value);
-    if (encoded.length > 200_000) {
+    if (encoded.length > 1_000_000) {
       return Response.json({ error: "工作区状态数据过大。" }, { status: 413 });
     }
 
     const db = getDb();
+    const [current] = await db.select().from(workspaceState).where(eq(workspaceState.key, payload.key!)).limit(1);
+    const currentRevision = current?.updatedAt?.toISOString() ?? null;
+    if (payload.expectedUpdatedAt !== undefined && payload.expectedUpdatedAt !== currentRevision) {
+      return Response.json({ error: "工作区已被其他会话更新。", updatedAt: currentRevision }, { status: 409, headers: { "cache-control": "no-store" } });
+    }
     const now = new Date();
     await db
       .insert(workspaceState)
@@ -53,7 +60,7 @@ export async function PUT(request: Request) {
         set: { value: encoded, updatedAt: now },
       });
 
-    return Response.json({ ok: true, updatedAt: now });
+    return Response.json({ ok: true, updatedAt: now }, { headers: { "cache-control": "no-store" } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "无法保存工作区状态。";
     return Response.json({ error: message }, { status: 500 });

@@ -1,4 +1,27 @@
 export type ReviewStatus = "draft" | "in_review" | "approved" | "rejected" | "final";
+export type CampaignStatus = "planning" | "active" | "review" | "complete";
+
+export type BrandProfile = {
+  brand_name: string;
+  positioning: string;
+  voice_traits: string[];
+  preferred_terms: string[];
+  blocked_terms: string[];
+  required_disclaimer: string;
+  updated_at: string;
+};
+
+export type Campaign = {
+  campaign_id: string;
+  campaign_name: string;
+  solution_id: string;
+  objective: string;
+  channels: string[];
+  owner: string;
+  status: CampaignStatus;
+  due_date: string;
+  created_at: string;
+};
 
 export type Solution = {
   solution_id: string;
@@ -46,6 +69,7 @@ export type MessagingStrategy = {
 
 export type ContentAsset = {
   draft_id: string;
+  campaign_id: string;
   solution_id: string;
   stakeholder_id: string;
   content_type: string;
@@ -63,6 +87,9 @@ export type ContentAsset = {
   reuse_count: number;
   reuse_context: string[];
   version: number;
+  channel: string;
+  compliance_score: number;
+  quality_score: number;
 };
 
 export type ReviewEvent = {
@@ -90,14 +117,16 @@ export type BenchmarkRecord = {
 };
 
 export type Workspace = {
-  schema_version: 3;
+  schema_version: 4;
+  brand: BrandProfile;
+  campaigns: Campaign[];
   solutions: Solution[];
   stakeholders: Stakeholder[];
   strategies: MessagingStrategy[];
   assets: ContentAsset[];
   reviews: ReviewEvent[];
   benchmarks: BenchmarkRecord[];
-  settings: { generation_mode: "demo" | "api"; model: string };
+  settings: { generation_mode: "demo" | "api"; model: string; default_review_required: boolean };
 };
 
 export type Analytics = {
@@ -114,6 +143,10 @@ export type Analytics = {
   manual_adaptation_time: number;
   ai_adaptation_time: number;
   time_reduction_rate: number;
+  pending_review_count: number;
+  active_campaign_count: number;
+  average_quality_score: number;
+  compliance_pass_rate: number;
 };
 
 export const CONTENT_TYPES = [
@@ -138,6 +171,17 @@ export const MARKETING_OBJECTIVES = [
 ] as const;
 
 export const REUSE_CONTEXTS = ["项目建议书", "行业活动", "销售演示", "企业社交媒体", "客户简报"] as const;
+export const CHANNELS = ["客户简报", "销售邮件", "销售演示", "项目建议书", "行业活动", "企业社交媒体", "官网内容"] as const;
+
+export const DEFAULT_BRAND: BrandProfile = {
+  brand_name: "EchoFlow",
+  positioning: "面向智慧城市与数字政务的可信 AI 解决方案营销工作台",
+  voice_traits: ["专业可信", "清晰克制", "以客户价值为中心", "尊重事实边界"],
+  preferred_terms: ["解决方案", "业务价值", "实施路径", "人工审核", "事实依据"],
+  blocked_terms: ["绝对领先", "保证成功", "零风险", "唯一选择"],
+  required_disclaimer: "本内容基于演示数据生成，对外使用前须由业务与合规人员核验。",
+  updated_at: "2026-08-01T09:00:00.000Z",
+};
 
 const iso = (day: number, hour = 9) => `2026-07-${String(day).padStart(2, "0")}T${String(hour).padStart(2, "0")}:00:00.000Z`;
 const round = (value: number, digits = 1) => Number(value.toFixed(digits));
@@ -183,6 +227,13 @@ export const DEMO_STAKEHOLDERS: Stakeholder[] = [
   { stakeholder_id: "STK-PART", name: "行业 / 生态合作伙伴", goals: ["识别互补价值", "明确交付分工"], pain_points: ["接口边界不清", "职责范围重叠"], information_needs: ["合作模式", "集成边界", "联合价值"], messaging_priority: ["生态适配", "协作模式", "共同成果"], technical_depth: "中", preferred_tone: "协作、可信、机会导向", cta: "讨论联合方案工作坊", risk_concerns: ["角色分工", "数据边界", "商业协同"] },
 ];
 
+export const DEMO_CAMPAIGNS: Campaign[] = [
+  { campaign_id: "CMP-001", campaign_name: "城市运行协同价值传播", solution_id: "SOL-001", objective: "提升方案认知", channels: ["客户简报", "销售邮件", "企业社交媒体"], owner: "解决方案营销组", status: "active", due_date: "2026-08-28", created_at: iso(3) },
+  { campaign_id: "CMP-002", campaign_name: "数据治理行业共创计划", solution_id: "SOL-008", objective: "促进关键角色共识", channels: ["行业活动", "官网内容", "项目建议书"], owner: "行业市场组", status: "review", due_date: "2026-08-22", created_at: iso(5) },
+  { campaign_id: "CMP-003", campaign_name: "政务服务智能助手销售赋能", solution_id: "SOL-010", objective: "支持销售沟通", channels: ["销售邮件", "客户简报", "销售演示"], owner: "销售赋能组", status: "active", due_date: "2026-09-05", created_at: iso(8) },
+  { campaign_id: "CMP-004", campaign_name: "智慧社区场景内容包", solution_id: "SOL-005", objective: "说明实施价值", channels: ["官网内容", "企业社交媒体"], owner: "内容运营组", status: "planning", due_date: "2026-09-12", created_at: iso(10) },
+];
+
 export function createStrategy(solution: Solution, stakeholder: Stakeholder, objective: string, contentType: string, id = `STR-${Date.now()}`): MessagingStrategy {
   return {
     strategy_id: id,
@@ -200,10 +251,19 @@ export function createStrategy(solution: Solution, stakeholder: Stakeholder, obj
   };
 }
 
-export function generateDemoCopy(solution: Solution, stakeholder: Stakeholder, strategy: MessagingStrategy) {
+export function generateDemoCopy(solution: Solution, stakeholder: Stakeholder, strategy: MessagingStrategy, brand: BrandProfile = DEFAULT_BRAND, channel = "客户简报") {
   const title = `${solution.solution_name}：${strategy.key_messages[0]}`;
-  const content = `${solution.short_description}\n\n对于${stakeholder.name}，重点应放在${stakeholder.messaging_priority.slice(0, 2).join("与")}。EchoFlow 仅使用已提供的方案记录生成内容：该方案包含${solution.key_capabilities.slice(0, 3).join("、")}，已记录的业务价值为${solution.business_value.join("与")}。\n\n实施场景：${solution.implementation_context}\n\n建议下一步：${strategy.cta}。\n\n事实说明：本初稿根据虚构演示记录生成。对外使用前必须核验所有表述；系统没有推断或虚构统计数据、客户案例、政府合作关系或生产环境能力。`;
+  const content = `${solution.short_description}\n\n面向${stakeholder.name}的${channel}，重点应放在${stakeholder.messaging_priority.slice(0, 2).join("与")}。${brand.brand_name}仅使用已提供的方案记录生成内容：该方案包含${solution.key_capabilities.slice(0, 3).join("、")}，已记录的业务价值为${solution.business_value.join("与")}。\n\n实施场景：${solution.implementation_context}\n\n建议下一步：${strategy.cta}。\n\n事实说明：${brand.required_disclaimer}系统没有推断或虚构统计数据、客户案例、政府合作关系或生产环境能力。`;
   return { title, content };
+}
+
+export function scoreContent(content: string, brand: BrandProfile = DEFAULT_BRAND) {
+  const blockedHits = brand.blocked_terms.filter((term) => content.includes(term)).length;
+  const preferredHits = brand.preferred_terms.filter((term) => content.includes(term)).length;
+  const hasDisclaimer = content.includes("事实说明") || content.includes(brand.required_disclaimer.slice(0, 12));
+  const quality = Math.max(55, Math.min(98, 72 + preferredHits * 4 + (content.length >= 180 ? 8 : 0) - blockedHits * 15));
+  const compliance = Math.max(0, Math.min(100, 88 + (hasDisclaimer ? 10 : 0) - blockedHits * 25));
+  return { quality_score: quality, compliance_score: compliance };
 }
 
 export function makeBenchmark(input: Omit<BenchmarkRecord, "total_ai_minutes" | "time_saved_minutes" | "time_reduction_percentage">): BenchmarkRecord {
@@ -220,6 +280,7 @@ export function makeBenchmark(input: Omit<BenchmarkRecord, "total_ai_minutes" | 
 export function calculateAnalytics(workspace: Workspace): Analytics {
   const approved = workspace.assets.filter((asset) => asset.review_status === "approved" || asset.review_status === "final");
   const reviewed = workspace.assets.filter((asset) => asset.approved_first_pass !== null);
+  const compliant = workspace.assets.filter((asset) => asset.compliance_score >= 90);
   return {
     solution_count: workspace.solutions.length,
     stakeholder_count: workspace.stakeholders.length,
@@ -234,6 +295,10 @@ export function calculateAnalytics(workspace: Workspace): Analytics {
     manual_adaptation_time: round(average(workspace.benchmarks.map((benchmark) => benchmark.manual_minutes)), 1),
     ai_adaptation_time: round(average(workspace.benchmarks.map((benchmark) => benchmark.total_ai_minutes)), 1),
     time_reduction_rate: round(average(workspace.benchmarks.map((benchmark) => benchmark.time_reduction_percentage)), 1),
+    pending_review_count: workspace.assets.filter((asset) => asset.review_status === "in_review").length,
+    active_campaign_count: workspace.campaigns.filter((campaign) => campaign.status === "active" || campaign.status === "review").length,
+    average_quality_score: round(average(workspace.assets.map((asset) => asset.quality_score)), 1),
+    compliance_pass_rate: round((compliant.length / Math.max(workspace.assets.length, 1)) * 100, 1),
   };
 }
 
@@ -253,7 +318,7 @@ export function applyContentEdit(workspace: Workspace, draftId: string, title: s
   if (!title.trim() || !content.trim() || !workspace.assets.some((asset) => asset.draft_id === draftId)) return workspace;
   return {
     ...workspace,
-    assets: workspace.assets.map((asset) => asset.draft_id === draftId ? { ...asset, title: title.trim(), content: content.trim(), edit_count: asset.edit_count + 1, version: asset.version + 1, review_status: "in_review", approved_first_pass: asset.approved_first_pass ?? false } : asset),
+    assets: workspace.assets.map((asset) => asset.draft_id === draftId ? { ...asset, title: title.trim(), content: content.trim(), ...scoreContent(content, workspace.brand), edit_count: asset.edit_count + 1, version: asset.version + 1, review_status: "in_review", approved_first_pass: asset.approved_first_pass ?? false } : asset),
     reviews: [{ review_id: `REV-${Date.now()}`, draft_id: draftId, action: "edited", occurred_at: occurredAt, duration_minutes: 3, note: "内容已在人工审核环节完成编辑。" }, ...workspace.reviews],
   };
 }
@@ -277,7 +342,10 @@ export function buildDemoWorkspace(): Workspace {
         const contentType = CONTENT_TYPES[(solutionIndex * 2 + stakeholderIndex + variant) % CONTENT_TYPES.length];
         const objective = MARKETING_OBJECTIVES[(solutionIndex + stakeholderIndex + variant) % MARKETING_OBJECTIVES.length];
         const strategy = createStrategy(solution, stakeholder, objective, contentType, `STR-${String(assetIndex).padStart(4, "0")}`);
-        const copy = generateDemoCopy(solution, stakeholder, strategy);
+        const campaign = DEMO_CAMPAIGNS[(solutionIndex + stakeholderIndex + variant) % DEMO_CAMPAIGNS.length];
+        const channel = CHANNELS[(solutionIndex + stakeholderIndex + variant) % CHANNELS.length];
+        const copy = generateDemoCopy(solution, stakeholder, strategy, DEFAULT_BRAND, channel);
+        const scores = scoreContent(copy.content, DEFAULT_BRAND);
         const reviewed = assetIndex % 9 !== 0;
         const approved = reviewed && assetIndex % 7 !== 0;
         const firstPass = approved && assetIndex % 4 !== 0;
@@ -289,6 +357,7 @@ export function buildDemoWorkspace(): Workspace {
         strategies.push(strategy);
         assets.push({
           draft_id: draftId,
+          campaign_id: campaign.campaign_id,
           solution_id: solution.solution_id,
           stakeholder_id: stakeholder.stakeholder_id,
           content_type: contentType,
@@ -306,6 +375,8 @@ export function buildDemoWorkspace(): Workspace {
           reuse_count: reused ? 1 + (assetIndex % 3) : 0,
           reuse_context: reused ? [REUSE_CONTEXTS[assetIndex % REUSE_CONTEXTS.length]] : [],
           version: 1 + editCount,
+          channel,
+          ...scores,
         });
         if (reviewed) {
           reviews.push({ review_id: `REV-${String(assetIndex).padStart(4, "0")}`, draft_id: draftId, action: approved ? "approved" : "rejected", occurred_at: iso(3 + (assetIndex % 23), 14), duration_minutes: 5 + (assetIndex % 13), note: firstPass ? "评估中未修改即通过。" : approved ? "调整证据表述后通过。" : "因表述缺少依据或不够清晰而退回。" });
@@ -316,7 +387,7 @@ export function buildDemoWorkspace(): Workspace {
     }
   }
 
-  return { schema_version: 3, solutions: DEMO_SOLUTIONS, stakeholders: DEMO_STAKEHOLDERS, strategies, assets, reviews, benchmarks, settings: { generation_mode: "demo", model: "gpt-5.6-luna" } };
+  return { schema_version: 4, brand: DEFAULT_BRAND, campaigns: DEMO_CAMPAIGNS, solutions: DEMO_SOLUTIONS, stakeholders: DEMO_STAKEHOLDERS, strategies, assets, reviews, benchmarks, settings: { generation_mode: "demo", model: "gpt-5.6-luna", default_review_required: true } };
 }
 
 export function groupCount<T>(items: T[], getKey: (item: T) => string) {
@@ -331,6 +402,8 @@ const csv = (headers: string[], rows: unknown[][]) => [headers.map(csvCell).join
 export function exportFiles(workspace: Workspace) {
   const analytics = calculateAnalytics(workspace);
   return {
+    "campaigns.csv": csv(Object.keys(workspace.campaigns[0]) as string[], workspace.campaigns.map((item) => Object.values(item).map((value) => Array.isArray(value) ? value.join(" | ") : value))),
+    "brand_profile.csv": csv(["field", "value"], Object.entries(workspace.brand).map(([key, value]) => [key, Array.isArray(value) ? value.join(" | ") : value])),
     "solutions.csv": csv(Object.keys(workspace.solutions[0]) as string[], workspace.solutions.map((item) => Object.values(item).map((value) => Array.isArray(value) ? value.join(" | ") : value))),
     "content_assets.csv": csv(Object.keys(workspace.assets[0]) as string[], workspace.assets.map((item) => Object.values(item).map((value) => Array.isArray(value) ? value.join(" | ") : value))),
     "reviews.csv": csv(Object.keys(workspace.reviews[0]) as string[], workspace.reviews.map(Object.values)),
@@ -342,5 +415,5 @@ export function exportFiles(workspace: Workspace) {
 export function isWorkspace(value: unknown): value is Workspace {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<Workspace>;
-  return candidate.schema_version === 3 && Array.isArray(candidate.solutions) && Array.isArray(candidate.stakeholders) && Array.isArray(candidate.assets) && Array.isArray(candidate.reviews) && Array.isArray(candidate.benchmarks);
+  return candidate.schema_version === 4 && Boolean(candidate.brand) && Array.isArray(candidate.campaigns) && Array.isArray(candidate.solutions) && Array.isArray(candidate.stakeholders) && Array.isArray(candidate.assets) && Array.isArray(candidate.reviews) && Array.isArray(candidate.benchmarks);
 }
