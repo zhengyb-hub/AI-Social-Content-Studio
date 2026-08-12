@@ -97,8 +97,6 @@ Resetting the workspace materialises ordinary system records for 12 fictional so
 | Average EchoFlow adaptation | 12.3 minutes | 120 benchmark rows |
 | Average time reduction | 72.8% | 120 benchmark rows |
 
-Use `CV_EVIDENCE.md` for claim-by-claim provenance and reproduction instructions.
-
 ## Tech stack
 
 - Next.js 16 and React 19

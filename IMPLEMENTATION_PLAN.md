@@ -28,7 +28,7 @@ The workspace record will contain:
 - workflow benchmark records;
 - settings and schema version.
 
-All analytics are calculated from those records at render/export time. No CV KPI result is stored as a constant.
+All analytics are calculated from those records at render/export time. No KPI result is stored as a constant.
 
 ## 4. Product surfaces
 
