@@ -1,5 +1,52 @@
 export type ReviewStatus = "draft" | "in_review" | "approved" | "rejected" | "final";
 export type CampaignStatus = "planning" | "active" | "review" | "complete";
+export type WorkspaceRole = "creator" | "reviewer" | "admin";
+export type WorkspacePermission =
+  | "generate_content"
+  | "edit_content"
+  | "review_content"
+  | "reuse_content"
+  | "manage_governance"
+  | "export_data";
+
+export type WorkspaceMember = {
+  member_id: string;
+  name: string;
+  title: string;
+  role: WorkspaceRole;
+  active: boolean;
+};
+
+export type GenerationRun = {
+  run_id: string;
+  draft_id: string;
+  campaign_id: string;
+  solution_id: string;
+  stakeholder_id: string;
+  requested_mode: "demo" | "api";
+  resolved_mode: "demo" | "api";
+  model: string;
+  prompt_version: string;
+  started_at: string;
+  completed_at: string;
+  duration_ms: number;
+  status: "completed" | "fallback" | "failed";
+  fallback_reason: string | null;
+  initiated_by: string;
+};
+
+export type ContentVersion = {
+  version_id: string;
+  draft_id: string;
+  version: number;
+  title: string;
+  content: string;
+  quality_score: number;
+  compliance_score: number;
+  created_at: string;
+  created_by: string;
+  reason: "generated" | "edited";
+};
 
 export type BrandProfile = {
   brand_name: string;
@@ -67,6 +114,38 @@ export type MessagingStrategy = {
   updated_at: string;
 };
 
+export type SocialCard = {
+  format: "4:5";
+  theme: "indigo" | "teal" | "amber";
+  kicker: string;
+  headline: string;
+  subheadline: string;
+  cta: string;
+};
+
+export type VideoScene = {
+  scene_id: number;
+  phase: "hook" | "problem" | "solution" | "proof" | "cta";
+  duration_seconds: number;
+  visual: string;
+  voiceover: string;
+  on_screen_text: string;
+};
+
+export type ContentDerivatives = {
+  short_copy: string;
+  hashtags: string[];
+  social_card: SocialCard;
+  video_script: {
+    title: string;
+    duration_seconds: number;
+    hook: string;
+    cta: string;
+    scenes: VideoScene[];
+  };
+  generated_at: string;
+};
+
 export type ContentAsset = {
   draft_id: string;
   campaign_id: string;
@@ -90,6 +169,8 @@ export type ContentAsset = {
   channel: string;
   compliance_score: number;
   quality_score: number;
+  source_references: string[];
+  derivatives: ContentDerivatives;
 };
 
 export type ReviewEvent = {
@@ -118,7 +199,7 @@ export type BenchmarkRecord = {
 };
 
 export type Workspace = {
-  schema_version: 4;
+  schema_version: 6;
   brand: BrandProfile;
   campaigns: Campaign[];
   solutions: Solution[];
@@ -127,8 +208,52 @@ export type Workspace = {
   assets: ContentAsset[];
   reviews: ReviewEvent[];
   benchmarks: BenchmarkRecord[];
-  settings: { generation_mode: "demo" | "api"; model: string; default_review_required: boolean };
+  members: WorkspaceMember[];
+  current_member_id: string;
+  generation_runs: GenerationRun[];
+  versions: ContentVersion[];
+  settings: {
+    generation_mode: "demo" | "api";
+    model: string;
+    prompt_version: string;
+    default_review_required: boolean;
+  };
 };
+
+const ROLE_PERMISSIONS: Record<WorkspaceRole, readonly WorkspacePermission[]> = {
+  creator: ["generate_content", "edit_content", "reuse_content", "export_data"],
+  reviewer: ["edit_content", "review_content", "export_data"],
+  admin: [
+    "generate_content",
+    "edit_content",
+    "review_content",
+    "reuse_content",
+    "manage_governance",
+    "export_data",
+  ],
+};
+
+export const ROLE_LABELS: Record<WorkspaceRole, string> = {
+  creator: "内容创作者",
+  reviewer: "内容审核员",
+  admin: "工作区管理员",
+};
+
+export function currentMember(workspace: Workspace) {
+  return (
+    workspace.members.find(
+      (member) => member.member_id === workspace.current_member_id && member.active,
+    ) ?? workspace.members.find((member) => member.active)
+  );
+}
+
+export function can(
+  workspace: Workspace,
+  permission: WorkspacePermission,
+) {
+  const member = currentMember(workspace);
+  return Boolean(member && ROLE_PERMISSIONS[member.role].includes(permission));
+}
 
 export type Analytics = {
   solution_count: number;
@@ -173,6 +298,30 @@ export const MARKETING_OBJECTIVES = [
 
 export const REUSE_CONTEXTS = ["项目建议书", "行业活动", "销售演示", "企业社交媒体", "客户简报"] as const;
 export const CHANNELS = ["客户简报", "销售邮件", "销售演示", "项目建议书", "行业活动", "企业社交媒体", "官网内容"] as const;
+
+export const DEFAULT_MEMBERS: WorkspaceMember[] = [
+  {
+    member_id: "MEM-CREATOR",
+    name: "郑宇博",
+    title: "内容运营与 AI 创作",
+    role: "creator",
+    active: true,
+  },
+  {
+    member_id: "MEM-REVIEWER",
+    name: "演示审核员",
+    title: "品牌与合规审核",
+    role: "reviewer",
+    active: true,
+  },
+  {
+    member_id: "MEM-ADMIN",
+    name: "演示管理员",
+    title: "工作区治理",
+    role: "admin",
+    active: true,
+  },
+];
 
 export const DEFAULT_BRAND: BrandProfile = {
   brand_name: "EchoFlow",
@@ -258,6 +407,95 @@ export function generateDemoCopy(solution: Solution, stakeholder: Stakeholder, s
   return { title, content };
 }
 
+export function buildContentDerivatives(
+  solution: Solution,
+  stakeholder: Stakeholder,
+  strategy: MessagingStrategy,
+  channel: string,
+  title: string,
+  generatedAt = new Date().toISOString(),
+): ContentDerivatives {
+  const themeIndex = [...solution.solution_id].reduce(
+    (sum, character) => sum + character.charCodeAt(0),
+    0,
+  ) % 3;
+  const theme = (["indigo", "teal", "amber"] as const)[themeIndex];
+  const primaryValue = solution.business_value[0] ?? "提升业务协同效率";
+  const primaryCapability = solution.key_capabilities[0] ?? "结构化业务流程";
+  const proofPoint = strategy.supporting_proof_points[0] ?? solution.implementation_context;
+  const hook = `如果${stakeholder.name}能够更快看清“${solution.business_problem.replace(/[。！？]$/, "")}”背后的协同问题，会发生什么？`;
+  const scenes: VideoScene[] = [
+    {
+      scene_id: 1,
+      phase: "hook",
+      duration_seconds: 4,
+      visual: "快速切换的分散信息界面，随后定格在一个清晰问题标题上。",
+      voiceover: hook,
+      on_screen_text: solution.business_problem.replace(/[。！？]$/, ""),
+    },
+    {
+      scene_id: 2,
+      phase: "problem",
+      duration_seconds: 7,
+      visual: `用三段信息流表现${stakeholder.pain_points.slice(0, 2).join("与")}。`,
+      voiceover: `对${stakeholder.name}而言，真正的阻力通常不是信息不足，而是${stakeholder.pain_points.slice(0, 2).join("、")}。`,
+      on_screen_text: stakeholder.pain_points.slice(0, 2).join(" / "),
+    },
+    {
+      scene_id: 3,
+      phase: "solution",
+      duration_seconds: 10,
+      visual: `EchoFlow 品牌界面展开，依次突出${solution.key_capabilities.slice(0, 3).join("、")}。`,
+      voiceover: `${solution.solution_name}以${solution.key_capabilities.slice(0, 3).join("、")}建立一条清晰的解决路径。`,
+      on_screen_text: `${solution.solution_name}\n${primaryCapability}`,
+    },
+    {
+      scene_id: 4,
+      phase: "proof",
+      duration_seconds: 9,
+      visual: "以来源标签、审核勾选和版本记录组成可信证据链动画。",
+      voiceover: `所有表达仅基于已提供的方案记录，并通过人工审核与版本追踪控制事实边界。${proofPoint}`,
+      on_screen_text: `有来源 · 可审核 · 可追溯\n${primaryValue}`,
+    },
+    {
+      scene_id: 5,
+      phase: "cta",
+      duration_seconds: 6,
+      visual: "品牌收束画面，出现行动按钮和内容包的多渠道缩略图。",
+      voiceover: `下一步，${strategy.cta}。`,
+      on_screen_text: strategy.cta,
+    },
+  ];
+  return {
+    short_copy: `${title}\n\n面向${stakeholder.name}，用${primaryCapability}回应关键业务问题，并以可审核、可追溯的内容流程支持${primaryValue}。\n\n${strategy.cta}。`,
+    hashtags: [
+      `#${solution.solution_category.replaceAll(" ", "")}`,
+      "#AI内容运营",
+      "#解决方案营销",
+      "#可信内容",
+    ],
+    social_card: {
+      format: "4:5",
+      theme,
+      kicker: `${channel} · ${stakeholder.name}`,
+      headline: title,
+      subheadline: `${primaryCapability}，支持${primaryValue}`,
+      cta: strategy.cta,
+    },
+    video_script: {
+      title: `${solution.solution_name}｜36 秒解决方案短视频`,
+      duration_seconds: scenes.reduce(
+        (total, scene) => total + scene.duration_seconds,
+        0,
+      ),
+      hook,
+      cta: strategy.cta,
+      scenes,
+    },
+    generated_at: generatedAt,
+  };
+}
+
 export function scoreContent(content: string, brand: BrandProfile = DEFAULT_BRAND) {
   const blockedHits = brand.blocked_terms.filter((term) => content.includes(term)).length;
   const preferredHits = brand.preferred_terms.filter((term) => content.includes(term)).length;
@@ -275,6 +513,50 @@ export function makeBenchmark(input: Omit<BenchmarkRecord, "total_ai_minutes" | 
     total_ai_minutes: round(total, 2),
     time_saved_minutes: round(saved, 2),
     time_reduction_percentage: input.manual_minutes > 0 ? round((saved / input.manual_minutes) * 100, 1) : 0,
+  };
+}
+
+export function registerGeneratedAsset(
+  workspace: Workspace,
+  asset: ContentAsset,
+  strategy: MessagingStrategy,
+  run: GenerationRun,
+): Workspace {
+  if (!can(workspace, "generate_content")) return workspace;
+  const member = currentMember(workspace);
+  const version: ContentVersion = {
+    version_id: `VER-${asset.draft_id}-1`,
+    draft_id: asset.draft_id,
+    version: 1,
+    title: asset.title,
+    content: asset.content,
+    quality_score: asset.quality_score,
+    compliance_score: asset.compliance_score,
+    created_at: asset.generated_at,
+    created_by: member?.name ?? "未知成员",
+    reason: "generated",
+  };
+  return {
+    ...workspace,
+    strategies: [strategy, ...workspace.strategies],
+    assets: [asset, ...workspace.assets],
+    generation_runs: [run, ...workspace.generation_runs],
+    versions: [version, ...workspace.versions],
+    reviews: [
+      {
+        review_id: `REV-${asset.draft_id}`,
+        draft_id: asset.draft_id,
+        action: "submitted",
+        occurred_at: asset.generated_at,
+        duration_minutes: 0,
+        note:
+          asset.review_status === "in_review"
+            ? "AI 初稿已提交人工审核。"
+            : "AI 初稿已保存为草稿。",
+        actor: member?.name ?? "内容创作者",
+      },
+      ...workspace.reviews,
+    ],
   };
 }
 
@@ -304,34 +586,53 @@ export function calculateAnalytics(workspace: Workspace): Analytics {
 }
 
 export function applyReviewDecision(workspace: Workspace, draftId: string, decision: "approved" | "rejected" | "finalised", occurredAt = new Date().toISOString(), reviewerNote = ""): Workspace {
+  if (!can(workspace, "review_content")) return workspace;
   const current = workspace.assets.find((asset) => asset.draft_id === draftId);
   if (!current) return workspace;
+  const member = currentMember(workspace);
   const nextStatus: ReviewStatus = decision === "finalised" ? "final" : decision;
   const duration = current.review_time_minutes || Math.max(1, Math.round((new Date(occurredAt).getTime() - new Date(current.generated_at).getTime()) / 60000));
   return {
     ...workspace,
     assets: workspace.assets.map((asset) => asset.draft_id === draftId ? { ...asset, review_status: nextStatus, approved_first_pass: asset.approved_first_pass ?? (decision === "approved" && asset.edit_count === 0), review_time_minutes: duration, finalised_at: nextStatus === "final" ? occurredAt : asset.finalised_at } : asset),
-    reviews: [{ review_id: `REV-${Date.now()}`, draft_id: draftId, action: decision, occurred_at: occurredAt, duration_minutes: duration, note: reviewerNote.trim() || `人工审核已将内容更新为${nextStatus === "approved" ? "已批准" : nextStatus === "rejected" ? "已驳回" : "已定稿"}状态。`, actor: "内容审核员" }, ...workspace.reviews],
+    reviews: [{ review_id: `REV-${Date.now()}`, draft_id: draftId, action: decision, occurred_at: occurredAt, duration_minutes: duration, note: reviewerNote.trim() || `人工审核已将内容更新为${nextStatus === "approved" ? "已批准" : nextStatus === "rejected" ? "已驳回" : "已定稿"}状态。`, actor: member?.name ?? "内容审核员" }, ...workspace.reviews],
   };
 }
 
 export function applyContentEdit(workspace: Workspace, draftId: string, title: string, content: string, occurredAt = new Date().toISOString()): Workspace {
+  if (!can(workspace, "edit_content")) return workspace;
   if (!title.trim() || !content.trim() || !workspace.assets.some((asset) => asset.draft_id === draftId)) return workspace;
+  const current = workspace.assets.find((asset) => asset.draft_id === draftId)!;
+  const scores = scoreContent(content, workspace.brand);
+  const member = currentMember(workspace);
+  const nextVersion = current.version + 1;
   return {
     ...workspace,
-    assets: workspace.assets.map((asset) => asset.draft_id === draftId ? { ...asset, title: title.trim(), content: content.trim(), ...scoreContent(content, workspace.brand), edit_count: asset.edit_count + 1, version: asset.version + 1, review_status: "in_review", approved_first_pass: asset.approved_first_pass ?? false } : asset),
-    reviews: [{ review_id: `REV-${Date.now()}`, draft_id: draftId, action: "edited", occurred_at: occurredAt, duration_minutes: 3, note: "内容已在人工审核环节完成编辑。" }, ...workspace.reviews],
+    assets: workspace.assets.map((asset) => asset.draft_id === draftId ? { ...asset, title: title.trim(), content: content.trim(), ...scores, edit_count: asset.edit_count + 1, version: nextVersion, review_status: "in_review", approved_first_pass: asset.approved_first_pass ?? false } : asset),
+    versions: [{
+      version_id: `VER-${draftId}-${nextVersion}`,
+      draft_id: draftId,
+      version: nextVersion,
+      title: title.trim(),
+      content: content.trim(),
+      ...scores,
+      created_at: occurredAt,
+      created_by: member?.name ?? "未知成员",
+      reason: "edited",
+    }, ...workspace.versions],
+    reviews: [{ review_id: `REV-${Date.now()}`, draft_id: draftId, action: "edited", occurred_at: occurredAt, duration_minutes: 3, note: "内容已在人工审核环节完成编辑。", actor: member?.name ?? "内容编辑" }, ...workspace.reviews],
   };
 }
 
 export function applyReuse(workspace: Workspace, draftId: string, context: string): Workspace {
+  if (!can(workspace, "reuse_content")) return workspace;
   if (!context.trim()) return workspace;
   const current = workspace.assets.find((asset) => asset.draft_id === draftId);
   if (!current || !["approved", "final"].includes(current.review_status)) return workspace;
   return {
     ...workspace,
     assets: workspace.assets.map((asset) => asset.draft_id === draftId ? { ...asset, reuse_count: asset.reuse_count + 1, reuse_context: [...asset.reuse_context, context] } : asset),
-    reviews: [{ review_id: `REV-${Date.now()}`, draft_id: draftId, action: "reused", occurred_at: new Date().toISOString(), duration_minutes: 0, note: `已复用于“${context}”场景。`, actor: "内容运营员" }, ...workspace.reviews],
+    reviews: [{ review_id: `REV-${Date.now()}`, draft_id: draftId, action: "reused", occurred_at: new Date().toISOString(), duration_minutes: 0, note: `已复用于“${context}”场景。`, actor: currentMember(workspace)?.name ?? "内容运营员" }, ...workspace.reviews],
   };
 }
 
@@ -352,6 +653,8 @@ export function buildDemoWorkspace(): Workspace {
   const assets: ContentAsset[] = [];
   const reviews: ReviewEvent[] = [];
   const benchmarks: BenchmarkRecord[] = [];
+  const generationRuns: GenerationRun[] = [];
+  const versions: ContentVersion[] = [];
   let assetIndex = 0;
 
   for (const [solutionIndex, solution] of DEMO_SOLUTIONS.entries()) {
@@ -395,10 +698,50 @@ export function buildDemoWorkspace(): Workspace {
           reuse_context: reused ? [REUSE_CONTEXTS[assetIndex % REUSE_CONTEXTS.length]] : [],
           version: 1 + editCount,
           channel,
+          source_references: [
+            solution.source_reference,
+            ...strategy.supporting_proof_points,
+          ],
+          derivatives: buildContentDerivatives(
+            solution,
+            stakeholder,
+            strategy,
+            channel,
+            copy.title,
+            generatedAt,
+          ),
           ...scores,
         });
+        generationRuns.push({
+          run_id: `RUN-${String(assetIndex).padStart(4, "0")}`,
+          draft_id: draftId,
+          campaign_id: campaign.campaign_id,
+          solution_id: solution.solution_id,
+          stakeholder_id: stakeholder.stakeholder_id,
+          requested_mode: "demo",
+          resolved_mode: "demo",
+          model: "deterministic-demo-v1",
+          prompt_version: "echoflow-cn-v1",
+          started_at: generatedAt,
+          completed_at: generatedAt,
+          duration_ms: (7 + (assetIndex % 19)) * 1000,
+          status: "completed",
+          fallback_reason: "demo_requested",
+          initiated_by: DEFAULT_MEMBERS[0].name,
+        });
+        versions.push({
+          version_id: `VER-${draftId}-${1 + editCount}`,
+          draft_id: draftId,
+          version: 1 + editCount,
+          title: copy.title,
+          content: copy.content,
+          ...scores,
+          created_at: generatedAt,
+          created_by: DEFAULT_MEMBERS[0].name,
+          reason: editCount > 0 ? "edited" : "generated",
+        });
         if (reviewed) {
-          reviews.push({ review_id: `REV-${String(assetIndex).padStart(4, "0")}`, draft_id: draftId, action: approved ? "approved" : "rejected", occurred_at: iso(3 + (assetIndex % 23), 14), duration_minutes: 5 + (assetIndex % 13), note: firstPass ? "评估中未修改即通过。" : approved ? "调整证据表述后通过。" : "因表述缺少依据或不够清晰而退回。" });
+          reviews.push({ review_id: `REV-${String(assetIndex).padStart(4, "0")}`, draft_id: draftId, action: approved ? "approved" : "rejected", occurred_at: iso(3 + (assetIndex % 23), 14), duration_minutes: 5 + (assetIndex % 13), note: firstPass ? "评估中未修改即通过。" : approved ? "调整证据表述后通过。" : "因表述缺少依据或不够清晰而退回。", actor: DEFAULT_MEMBERS[1].name });
         }
         const manual = 34 + (assetIndex % 27);
         benchmarks.push(makeBenchmark({ benchmark_id: `BM-${String(assetIndex).padStart(4, "0")}`, solution_id: solution.solution_id, stakeholder_id: stakeholder.stakeholder_id, content_type: contentType, manual_minutes: manual, ai_generation_minutes: round((7 + (assetIndex % 19)) / 60, 2), ai_review_minutes: reviewed ? 5 + (assetIndex % 13) : 8, ai_edit_minutes: editCount * (3 + (assetIndex % 4)), timestamp: generatedAt }));
@@ -406,7 +749,27 @@ export function buildDemoWorkspace(): Workspace {
     }
   }
 
-  return { schema_version: 4, brand: DEFAULT_BRAND, campaigns: DEMO_CAMPAIGNS, solutions: DEMO_SOLUTIONS, stakeholders: DEMO_STAKEHOLDERS, strategies, assets, reviews, benchmarks, settings: { generation_mode: "demo", model: "gpt-5.6-luna", default_review_required: true } };
+  return {
+    schema_version: 6,
+    brand: DEFAULT_BRAND,
+    campaigns: DEMO_CAMPAIGNS,
+    solutions: DEMO_SOLUTIONS,
+    stakeholders: DEMO_STAKEHOLDERS,
+    strategies,
+    assets,
+    reviews,
+    benchmarks,
+    members: DEFAULT_MEMBERS.map((member) => ({ ...member })),
+    current_member_id: DEFAULT_MEMBERS[0].member_id,
+    generation_runs: generationRuns,
+    versions,
+    settings: {
+      generation_mode: "demo",
+      model: "gpt-5.6-luna",
+      prompt_version: "echoflow-cn-v1",
+      default_review_required: true,
+    },
+  };
 }
 
 export function groupCount<T>(items: T[], getKey: (item: T) => string) {
@@ -424,9 +787,26 @@ export function exportFiles(workspace: Workspace) {
     "campaigns.csv": csv(Object.keys(workspace.campaigns[0]) as string[], workspace.campaigns.map((item) => Object.values(item).map((value) => Array.isArray(value) ? value.join(" | ") : value))),
     "brand_profile.csv": csv(["field", "value"], Object.entries(workspace.brand).map(([key, value]) => [key, Array.isArray(value) ? value.join(" | ") : value])),
     "solutions.csv": csv(Object.keys(workspace.solutions[0]) as string[], workspace.solutions.map((item) => Object.values(item).map((value) => Array.isArray(value) ? value.join(" | ") : value))),
-    "content_assets.csv": csv(Object.keys(workspace.assets[0]) as string[], workspace.assets.map((item) => Object.values(item).map((value) => Array.isArray(value) ? value.join(" | ") : value))),
+    "content_assets.csv": csv(Object.keys(workspace.assets[0]) as string[], workspace.assets.map((item) => Object.values(item).map((value) => Array.isArray(value) ? value.join(" | ") : typeof value === "object" && value !== null ? JSON.stringify(value) : value))),
     "reviews.csv": csv(Object.keys(workspace.reviews[0]) as string[], workspace.reviews.map(Object.values)),
     "benchmarks.csv": csv(Object.keys(workspace.benchmarks[0]) as string[], workspace.benchmarks.map(Object.values)),
+    "generation_runs.csv": csv(Object.keys(workspace.generation_runs[0]) as string[], workspace.generation_runs.map(Object.values)),
+    "content_versions.csv": csv(Object.keys(workspace.versions[0]) as string[], workspace.versions.map(Object.values)),
+    "workspace_members.csv": csv(Object.keys(workspace.members[0]) as string[], workspace.members.map(Object.values)),
+    "content_packages.csv": csv(
+      ["draft_id", "short_copy", "hashtags", "social_headline", "social_subheadline", "social_cta", "video_title", "video_duration_seconds", "scene_count"],
+      workspace.assets.map((asset) => [
+        asset.draft_id,
+        asset.derivatives.short_copy,
+        asset.derivatives.hashtags.join(" "),
+        asset.derivatives.social_card.headline,
+        asset.derivatives.social_card.subheadline,
+        asset.derivatives.social_card.cta,
+        asset.derivatives.video_script.title,
+        asset.derivatives.video_script.duration_seconds,
+        asset.derivatives.video_script.scenes.length,
+      ]),
+    ),
     "analytics_summary.csv": csv(["metric", "value", "calculation_source"], Object.entries(analytics).map(([key, value]) => [key, value, key.includes("time") ? "benchmarks/content assets" : "workspace content/review/reuse records"])),
   };
 }
@@ -434,7 +814,7 @@ export function exportFiles(workspace: Workspace) {
 export function isWorkspace(value: unknown): value is Workspace {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<Workspace>;
-  return candidate.schema_version === 4 && Boolean(candidate.brand) && Array.isArray(candidate.campaigns) && Array.isArray(candidate.solutions) && Array.isArray(candidate.stakeholders) && Array.isArray(candidate.assets) && Array.isArray(candidate.reviews) && Array.isArray(candidate.benchmarks);
+  return candidate.schema_version === 6 && Boolean(candidate.brand) && Array.isArray(candidate.campaigns) && Array.isArray(candidate.solutions) && Array.isArray(candidate.stakeholders) && Array.isArray(candidate.assets) && candidate.assets.every((asset) => Boolean(asset.derivatives)) && Array.isArray(candidate.reviews) && Array.isArray(candidate.benchmarks) && Array.isArray(candidate.members) && Array.isArray(candidate.generation_runs) && Array.isArray(candidate.versions) && typeof candidate.current_member_id === "string";
 }
 
 export function normaliseWorkspace(value: unknown): Workspace | null {
@@ -442,39 +822,131 @@ export function normaliseWorkspace(value: unknown): Workspace | null {
   if (!value || typeof value !== "object") return null;
   const legacy = value as {
     schema_version?: number;
+    brand?: BrandProfile;
+    campaigns?: Campaign[];
     solutions?: Solution[];
     stakeholders?: Stakeholder[];
     strategies?: MessagingStrategy[];
     assets?: Array<Partial<ContentAsset> & Pick<ContentAsset, "content">>;
     reviews?: ReviewEvent[];
     benchmarks?: BenchmarkRecord[];
+    members?: WorkspaceMember[];
+    current_member_id?: string;
+    generation_runs?: GenerationRun[];
+    versions?: ContentVersion[];
     settings?: Partial<Workspace["settings"]>;
   };
-  if (legacy.schema_version !== 3 || !Array.isArray(legacy.solutions) || !Array.isArray(legacy.stakeholders) || !Array.isArray(legacy.assets) || !Array.isArray(legacy.reviews) || !Array.isArray(legacy.benchmarks)) return null;
-  const campaigns = DEMO_CAMPAIGNS.map((campaign) => ({ ...campaign }));
+  if (![3, 4, 5].includes(legacy.schema_version ?? 0) || !Array.isArray(legacy.solutions) || !Array.isArray(legacy.stakeholders) || !Array.isArray(legacy.assets) || !Array.isArray(legacy.reviews) || !Array.isArray(legacy.benchmarks)) return null;
+  const solutions = legacy.solutions.length ? legacy.solutions : DEMO_SOLUTIONS;
+  const stakeholders = legacy.stakeholders.length
+    ? legacy.stakeholders
+    : DEMO_STAKEHOLDERS;
+  const brand = legacy.brand ?? DEFAULT_BRAND;
+  const campaigns = Array.isArray(legacy.campaigns)
+    ? legacy.campaigns
+    : DEMO_CAMPAIGNS.map((campaign) => ({ ...campaign }));
+  const strategies = Array.isArray(legacy.strategies) ? legacy.strategies : [];
   const assets = legacy.assets.map((asset, index) => {
     const content = typeof asset.content === "string" ? asset.content : "";
+    const solution = solutions.find(
+      (item) => item.solution_id === asset.solution_id,
+    ) ?? solutions[index % solutions.length];
+    const stakeholder = stakeholders.find(
+      (item) => item.stakeholder_id === asset.stakeholder_id,
+    ) ?? stakeholders[index % stakeholders.length];
+    const strategy = strategies.find(
+      (item) =>
+        item.solution_id === asset.solution_id &&
+        item.stakeholder_id === asset.stakeholder_id,
+    ) ?? createStrategy(
+      solution,
+      stakeholder,
+      asset.marketing_objective || MARKETING_OBJECTIVES[0],
+      asset.content_type || CONTENT_TYPES[0],
+      `STR-MIGRATED-${String(index + 1).padStart(4, "0")}`,
+    );
+    const channel = asset.channel || CHANNELS[index % CHANNELS.length];
+    const title = asset.title || `${solution.solution_name}：${solution.business_value[0]}`;
     return {
       ...asset,
       campaign_id: asset.campaign_id || campaigns[index % campaigns.length].campaign_id,
-      channel: asset.channel || CHANNELS[index % CHANNELS.length],
-      ...scoreContent(content, DEFAULT_BRAND),
+      channel,
+      title,
+      source_references: asset.source_references ?? [
+        solution.source_reference ?? "迁移记录：来源待复核",
+        ...(strategy?.supporting_proof_points ?? []),
+      ],
+      derivatives: asset.derivatives ?? buildContentDerivatives(
+        solution,
+        stakeholder,
+        strategy,
+        channel,
+        title,
+        asset.generated_at,
+      ),
+      ...scoreContent(content, brand),
     } as ContentAsset;
   });
+  const promptVersion = legacy.settings?.prompt_version || "echoflow-cn-v1";
+  const generationRuns: GenerationRun[] = Array.isArray(legacy.generation_runs)
+    ? legacy.generation_runs
+    : assets.map((asset, index) => ({
+    run_id: `RUN-MIGRATED-${String(index + 1).padStart(4, "0")}`,
+    draft_id: asset.draft_id,
+    campaign_id: asset.campaign_id,
+    solution_id: asset.solution_id,
+    stakeholder_id: asset.stakeholder_id,
+    requested_mode: asset.generation_mode,
+    resolved_mode: asset.generation_mode,
+    model:
+      asset.generation_mode === "api"
+        ? legacy.settings?.model || "gpt-5.6-luna"
+        : "deterministic-demo-v1",
+    prompt_version: promptVersion,
+    started_at: asset.generated_at,
+    completed_at: asset.generated_at,
+    duration_ms: Math.round(asset.generation_seconds * 1000),
+    status: "completed",
+    fallback_reason: asset.generation_mode === "demo" ? "migrated_demo_record" : null,
+    initiated_by: DEFAULT_MEMBERS[0].name,
+    }));
+  const versions: ContentVersion[] = Array.isArray(legacy.versions)
+    ? legacy.versions
+    : assets.map((asset) => ({
+    version_id: `VER-${asset.draft_id}-${asset.version}`,
+    draft_id: asset.draft_id,
+    version: asset.version,
+    title: asset.title,
+    content: asset.content,
+    quality_score: asset.quality_score,
+    compliance_score: asset.compliance_score,
+    created_at: asset.generated_at,
+    created_by: DEFAULT_MEMBERS[0].name,
+    reason: asset.edit_count > 0 ? "edited" : "generated",
+    }));
   return {
-    schema_version: 4,
-    brand: DEFAULT_BRAND,
+    schema_version: 6,
+    brand,
     campaigns,
-    solutions: legacy.solutions,
-    stakeholders: legacy.stakeholders,
-    strategies: Array.isArray(legacy.strategies) ? legacy.strategies : [],
+    solutions,
+    stakeholders,
+    strategies,
     assets,
     reviews: legacy.reviews,
     benchmarks: legacy.benchmarks,
+    members: Array.isArray(legacy.members)
+      ? legacy.members
+      : DEFAULT_MEMBERS.map((member) => ({ ...member })),
+    current_member_id:
+      legacy.current_member_id || DEFAULT_MEMBERS[0].member_id,
+    generation_runs: generationRuns,
+    versions,
     settings: {
       generation_mode: legacy.settings?.generation_mode === "api" ? "api" : "demo",
       model: legacy.settings?.model || "gpt-5.6-luna",
-      default_review_required: true,
+      prompt_version: promptVersion,
+      default_review_required:
+        legacy.settings?.default_review_required ?? true,
     },
   };
 }

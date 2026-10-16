@@ -7,7 +7,9 @@ import {
   applyReviewDecision,
   buildDemoWorkspace,
   calculateAnalytics,
+  can,
   createStrategy,
+  currentMember,
   exportFiles,
   generateDemoCopy,
   isWorkspace,
@@ -23,8 +25,13 @@ test("creates a reproducible, non-claimed evaluation dataset", () => {
   assert.equal(workspace.stakeholders.length, 5);
   assert.equal(workspace.assets.length, 120);
   assert.equal(workspace.campaigns.length, 4);
-  assert.equal(workspace.schema_version, 4);
+  assert.equal(workspace.schema_version, 6);
   assert.equal(workspace.benchmarks.length, workspace.assets.length);
+  assert.equal(workspace.generation_runs.length, workspace.assets.length);
+  assert.equal(workspace.versions.length, workspace.assets.length);
+  assert.ok(workspace.assets.every((asset) => asset.source_references.length > 0));
+  assert.ok(workspace.assets.every((asset) => asset.derivatives.video_script.duration_seconds >= 30));
+  assert.ok(workspace.assets.every((asset) => asset.derivatives.social_card.format === "4:5"));
   assert.ok(workspace.solutions.every((solution) => solution.source_reference.includes("虚构演示")));
 });
 
@@ -61,9 +68,11 @@ test("records approve, reject, edit and reuse workflow actions", () => {
   let workspace = buildDemoWorkspace();
   const draft = workspace.assets.find((asset) => asset.review_status === "draft");
   assert.ok(draft);
+  workspace.current_member_id = "MEM-REVIEWER";
   workspace = applyReviewDecision(workspace, draft.draft_id, "approved", "2026-08-01T10:00:00.000Z");
   assert.equal(workspace.assets.find((asset) => asset.draft_id === draft.draft_id).review_status, "approved");
   assert.equal(workspace.assets.find((asset) => asset.draft_id === draft.draft_id).approved_first_pass, true);
+  workspace.current_member_id = "MEM-CREATOR";
   workspace = applyReuse(workspace, draft.draft_id, "项目建议书");
   assert.equal(workspace.assets.find((asset) => asset.draft_id === draft.draft_id).reuse_count, 1);
   assert.equal(workspace.reviews[0].action, "reused");
@@ -71,17 +80,20 @@ test("records approve, reject, edit and reuse workflow actions", () => {
   const edited = workspace.assets.find((asset) => asset.draft_id === draft.draft_id);
   assert.equal(edited.review_status, "in_review");
   assert.ok(edited.edit_count > 0);
+  assert.equal(workspace.versions.find((version) => version.draft_id === draft.draft_id).version, edited.version);
+  workspace.current_member_id = "MEM-REVIEWER";
   workspace = applyReviewDecision(workspace, draft.draft_id, "rejected");
   assert.equal(workspace.assets.find((asset) => asset.draft_id === draft.draft_id).review_status, "rejected");
 });
 
 test("captures reviewer notes and advances campaign lifecycle", () => {
   let workspace = buildDemoWorkspace();
+  workspace.current_member_id = "MEM-REVIEWER";
   const rejected = workspace.assets.find((asset) => asset.review_status === "rejected");
   assert.ok(rejected);
   workspace = applyReviewDecision(workspace, rejected.draft_id, "rejected", "2026-08-12T10:00:00.000Z", "请补充实施依据。" );
   assert.equal(workspace.reviews[0].note, "请补充实施依据。");
-  assert.equal(workspace.reviews[0].actor, "内容审核员");
+  assert.equal(workspace.reviews[0].actor, "演示审核员");
   const planning = workspace.campaigns.find((campaign) => campaign.status === "planning");
   assert.ok(planning);
   workspace = advanceCampaign(workspace, planning.campaign_id);
@@ -95,12 +107,19 @@ test("migrates legacy workspaces without discarding content", () => {
   delete legacy.brand;
   delete legacy.campaigns;
   delete legacy.settings.default_review_required;
-  legacy.assets.forEach((asset) => { delete asset.campaign_id; delete asset.channel; delete asset.quality_score; delete asset.compliance_score; });
+  delete legacy.settings.prompt_version;
+  delete legacy.members;
+  delete legacy.current_member_id;
+  delete legacy.generation_runs;
+  delete legacy.versions;
+  legacy.assets.forEach((asset) => { delete asset.campaign_id; delete asset.channel; delete asset.quality_score; delete asset.compliance_score; delete asset.source_references; delete asset.derivatives; });
   const migrated = normaliseWorkspace(legacy);
   assert.ok(migrated);
-  assert.equal(migrated.schema_version, 4);
+  assert.equal(migrated.schema_version, 6);
   assert.equal(migrated.assets.length, current.assets.length);
-  assert.ok(migrated.assets.every((asset) => asset.campaign_id && asset.channel));
+  assert.ok(migrated.assets.every((asset) => asset.campaign_id && asset.channel && asset.source_references.length && asset.derivatives.video_script.scenes.length));
+  assert.equal(migrated.generation_runs.length, migrated.assets.length);
+  assert.equal(migrated.versions.length, migrated.assets.length);
 });
 
 test("validates state and exports all evidence files", () => {
@@ -108,9 +127,29 @@ test("validates state and exports all evidence files", () => {
   assert.equal(isWorkspace(workspace), true);
   assert.equal(isWorkspace({ schema_version: 2 }), false);
   const files = exportFiles(workspace);
-  assert.deepEqual(Object.keys(files), ["campaigns.csv", "brand_profile.csv", "solutions.csv", "content_assets.csv", "reviews.csv", "benchmarks.csv", "analytics_summary.csv"]);
+  assert.deepEqual(Object.keys(files), ["campaigns.csv", "brand_profile.csv", "solutions.csv", "content_assets.csv", "reviews.csv", "benchmarks.csv", "generation_runs.csv", "content_versions.csv", "workspace_members.csv", "content_packages.csv", "analytics_summary.csv"]);
   assert.match(files["benchmarks.csv"], /total_ai_minutes/);
   assert.match(files["analytics_summary.csv"], /first_pass_approval_rate/);
+  assert.match(files["generation_runs.csv"], /prompt_version/);
+  assert.match(files["content_versions.csv"], /created_by/);
+  assert.match(files["content_packages.csv"], /video_duration_seconds/);
+});
+
+test("enforces demo role permissions without claiming production authentication", () => {
+  const workspace = buildDemoWorkspace();
+  assert.equal(currentMember(workspace).role, "creator");
+  assert.equal(can(workspace, "generate_content"), true);
+  assert.equal(can(workspace, "review_content"), false);
+  workspace.current_member_id = "MEM-REVIEWER";
+  assert.equal(can(workspace, "generate_content"), false);
+  assert.equal(can(workspace, "review_content"), true);
+  workspace.current_member_id = "MEM-ADMIN";
+  assert.equal(can(workspace, "manage_governance"), true);
+});
+
+test("keeps the persisted demo workspace below the state API payload limit", () => {
+  const bytes = Buffer.byteLength(JSON.stringify(buildDemoWorkspace()), "utf8");
+  assert.ok(bytes < 1_000_000, `workspace payload is ${bytes} bytes`);
 });
 
 test("generation input validation and missing-key fallback remain safe", () => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import ContentPackageModal from "./components/ContentPackageModal";
 import {
   Analytics,
   BrandProfile,
@@ -9,9 +10,11 @@ import {
   CHANNELS,
   CONTENT_TYPES,
   ContentAsset,
+  GenerationRun,
   MARKETING_OBJECTIVES,
   MessagingStrategy,
   REUSE_CONTEXTS,
+  ROLE_LABELS,
   ReviewStatus,
   Solution,
   Workspace,
@@ -20,12 +23,16 @@ import {
   applyReviewDecision,
   advanceCampaign,
   buildDemoWorkspace,
+  buildContentDerivatives,
   calculateAnalytics,
+  can,
   createStrategy,
+  currentMember,
   exportFiles,
   generateDemoCopy,
   groupCount,
   normaliseWorkspace,
+  registerGeneratedAsset,
   scoreContent,
 } from "./lib/echoflow";
 
@@ -876,6 +883,8 @@ function Studio({
   update: (fn: (value: Workspace) => Workspace, message: string) => void;
   go: (page: Page) => void;
 }) {
+  const member = currentMember(workspace);
+  const canGenerate = can(workspace, "generate_content");
   const [campaignId, setCampaignId] = useState(
     workspace.campaigns[0]?.campaign_id ?? "",
   );
@@ -926,8 +935,10 @@ function Studio({
     );
   }
   async function generate() {
-    if (!solution || !stakeholder || !strategy || !campaign) return;
+    if (!solution || !stakeholder || !strategy || !campaign || !canGenerate)
+      return;
     setBusy(true);
+    const startedAt = new Date().toISOString();
     const started = performance.now();
     let result = generateDemoCopy(
       solution,
@@ -937,6 +948,9 @@ function Studio({
       channel,
     );
     let mode: "demo" | "api" = "demo";
+    let model = "deterministic-demo-v1";
+    let promptVersion = workspace.settings.prompt_version;
+    let fallbackReason: string | null = null;
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
@@ -956,14 +970,22 @@ function Studio({
           title: string;
           content: string;
           mode: "demo" | "api";
+          model: string;
+          promptVersion: string;
+          fallbackReason: string | null;
         };
         result = payload;
         mode = payload.mode;
+        model = payload.model;
+        promptVersion = payload.promptVersion;
+        fallbackReason = payload.fallbackReason;
       }
-    } catch {
-      /* deterministic fallback */
+    } catch (error) {
+      fallbackReason =
+        error instanceof Error ? error.message : "生成服务不可用，已安全回退。";
     }
     const now = new Date().toISOString();
+    const durationMs = Math.max(Math.round(performance.now() - started), 100);
     const scores = scoreContent(result.content, workspace.brand);
     const needsReview = workspace.settings.default_review_required;
     const asset: ContentAsset = {
@@ -989,27 +1011,42 @@ function Studio({
       reuse_context: [],
       version: 1,
       channel,
+      source_references: [
+        solution.source_reference,
+        ...strategy.supporting_proof_points,
+      ],
+      derivatives: buildContentDerivatives(
+        solution,
+        stakeholder,
+        strategy,
+        channel,
+        result.title,
+        now,
+      ),
       ...scores,
     };
+    const run: GenerationRun = {
+      run_id: `RUN-${asset.draft_id}`,
+      draft_id: asset.draft_id,
+      campaign_id: campaign.campaign_id,
+      solution_id: solution.solution_id,
+      stakeholder_id: stakeholder.stakeholder_id,
+      requested_mode: workspace.settings.generation_mode,
+      resolved_mode: mode,
+      model,
+      prompt_version: promptVersion,
+      started_at: startedAt,
+      completed_at: now,
+      duration_ms: durationMs,
+      status:
+        workspace.settings.generation_mode === "api" && mode === "demo"
+          ? "fallback"
+          : "completed",
+      fallback_reason: fallbackReason,
+      initiated_by: member?.name ?? "未知成员",
+    };
     update(
-      (value) => ({
-        ...value,
-        strategies: [strategy, ...value.strategies],
-        assets: [asset, ...value.assets],
-        reviews: [
-          {
-            review_id: `REV-${Date.now()}`,
-            draft_id: asset.draft_id,
-            action: "submitted",
-            occurred_at: now,
-            duration_minutes: 0,
-            note: needsReview
-              ? "AI 初稿已提交人工审核。"
-              : "AI 初稿已保存为草稿。",
-          },
-          ...value.reviews,
-        ],
-      }),
+      (value) => registerGeneratedAsset(value, asset, strategy, run),
       `${mode === "api" ? "API" : "演示"}初稿已生成并${needsReview ? "进入审核" : "保存为草稿"}。`,
     );
     setBusy(false);
@@ -1255,20 +1292,35 @@ function Studio({
                 <i>✓</i>
                 <span>已应用品牌术语、禁用词和事实声明规则</span>
               </div>
+              <div className="package-includes">
+                <span>本次同步生成</span>
+                <div>
+                  <b>文</b><small>长短文案</small>
+                  <b>图</b><small>4:5 社交图</small>
+                  <b>映</b><small>36 秒分镜</small>
+                </div>
+              </div>
             </>
           ) : (
             <div className="empty-state">请选择完整的内容上下文</div>
           )}
           <button
             className="generate-button"
-            disabled={busy || !strategy}
+            disabled={busy || !strategy || !canGenerate}
+            title={
+              canGenerate
+                ? undefined
+                : `${ROLE_LABELS[member?.role ?? "creator"]}无内容生成权限`
+            }
             onClick={generate}
           >
             <span>✦</span>
             <div>
               <strong>{busy ? "正在生成并检查…" : "生成内容并送审"}</strong>
               <small>
-                {workspace.settings.generation_mode === "demo"
+                {!canGenerate
+                  ? `当前角色：${ROLE_LABELS[member?.role ?? "creator"]}`
+                  : workspace.settings.generation_mode === "demo"
                   ? "演示模式 · 无需 API 密钥"
                   : "API 模式 · 自动安全回退"}
               </small>
@@ -1288,6 +1340,9 @@ function Review({
   workspace: Workspace;
   update: (fn: (value: Workspace) => Workspace, message: string) => void;
 }) {
+  const member = currentMember(workspace);
+  const canReview = can(workspace, "review_content");
+  const canEdit = can(workspace, "edit_content");
   const queue = useMemo(
     () =>
       workspace.assets.filter(
@@ -1303,6 +1358,7 @@ function Review({
   const [title, setTitle] = useState(asset?.title ?? "");
   const [content, setContent] = useState(asset?.content ?? "");
   const [note, setNote] = useState("");
+  const [packageOpen, setPackageOpen] = useState(false);
   useEffect(() => {
     const next =
       workspace.assets.find((item) => item.draft_id === selected) ?? queue[0];
@@ -1330,7 +1386,14 @@ function Review({
     (item) => item.stakeholder_id === asset.stakeholder_id,
   );
   const scores = scoreContent(content, workspace.brand);
+  const generationRun = workspace.generation_runs.find(
+    (item) => item.draft_id === asset.draft_id,
+  );
+  const versions = workspace.versions
+    .filter((item) => item.draft_id === asset.draft_id)
+    .sort((a, b) => b.version - a.version);
   function decide(decision: "approved" | "rejected" | "finalised") {
+    if (!canReview) return;
     if (decision === "rejected" && !note.trim()) return;
     update(
       (value) =>
@@ -1351,6 +1414,7 @@ function Review({
     if (next) setSelected(next.draft_id);
   }
   function save() {
+    if (!canEdit) return;
     update(
       (value) => applyContentEdit(value, asset.draft_id, title, content),
       "修改已保存并重新进入审核。",
@@ -1399,18 +1463,42 @@ function Review({
               </small>
             </div>
             <div>
-              <button className="ghost" onClick={save}>
+              <button
+                className="ghost"
+                disabled={!canEdit}
+                title={
+                  canEdit
+                    ? undefined
+                    : `${ROLE_LABELS[member?.role ?? "creator"]}无编辑权限`
+                }
+                onClick={save}
+              >
                 保存修改
               </button>
               <button
                 className="danger"
-                disabled={!note.trim()}
-                title={!note.trim() ? "退回前请填写审核意见" : undefined}
+                disabled={!canReview || !note.trim()}
+                title={
+                  !canReview
+                    ? `${ROLE_LABELS[member?.role ?? "creator"]}无审核权限`
+                    : !note.trim()
+                      ? "退回前请填写审核意见"
+                      : undefined
+                }
                 onClick={() => decide("rejected")}
               >
                 退回
               </button>
-              <button className="primary" onClick={() => decide("approved")}>
+              <button
+                className="primary"
+                disabled={!canReview}
+                title={
+                  canReview
+                    ? undefined
+                    : `${ROLE_LABELS[member?.role ?? "creator"]}无审核权限`
+                }
+                onClick={() => decide("approved")}
+              >
                 批准内容
               </button>
             </div>
@@ -1419,6 +1507,7 @@ function Review({
             <span>标题</span>
             <input
               value={title}
+              disabled={!canEdit}
               onChange={(event) => setTitle(event.target.value)}
             />
           </label>
@@ -1426,6 +1515,7 @@ function Review({
             <span>正文</span>
             <textarea
               value={content}
+              disabled={!canEdit}
               onChange={(event) => setContent(event.target.value)}
             />
           </label>
@@ -1457,6 +1547,7 @@ function Review({
             <span>审核意见</span>
             <textarea
               value={note}
+              disabled={!canReview}
               onChange={(event) => setNote(event.target.value)}
               placeholder="批准时可选；退回时必须说明修改要求。"
             />
@@ -1476,21 +1567,71 @@ function Review({
               <i>✓</i> 行动引导与受众匹配
             </p>
           </div>
+          <button
+            className="primary full package-preview-button"
+            onClick={() => setPackageOpen(true)}
+          >
+            预览完整内容包
+          </button>
           <div className="evidence-box">
             <span>引用依据</span>
-            {workspace.strategies
-              .find(
-                (item) =>
-                  item.solution_id === asset.solution_id &&
-                  item.stakeholder_id === asset.stakeholder_id,
-              )
-              ?.supporting_proof_points.slice(0, 3)
-              .map((item) => (
+            {asset.source_references.slice(0, 3).map((item) => (
                 <p key={item}>◇ {item}</p>
               ))}
           </div>
+          <div className="provenance-card">
+            <div>
+              <span>生成追踪</span>
+              <b>{generationRun?.status === "fallback" ? "安全回退" : "已记录"}</b>
+            </div>
+            <p>
+              <strong>模型</strong>
+              <span>{generationRun?.model ?? "历史演示生成器"}</span>
+            </p>
+            <p>
+              <strong>提示词版本</strong>
+              <span>{generationRun?.prompt_version ?? "未记录"}</span>
+            </p>
+            <p>
+              <strong>生成模式</strong>
+              <span>
+                {generationRun
+                  ? `${generationRun.requested_mode} → ${generationRun.resolved_mode}`
+                  : asset.generation_mode}
+              </span>
+            </p>
+            {generationRun?.fallback_reason && (
+              <small>{generationRun.fallback_reason}</small>
+            )}
+          </div>
+          <div className="version-history">
+            <div>
+              <span>不可变版本记录</span>
+              <b>{versions.length}</b>
+            </div>
+            {versions.slice(0, 4).map((version) => (
+              <p key={version.version_id}>
+                <strong>V{version.version}</strong>
+                <span>{version.created_by}</span>
+                <small>{formatDate(version.created_at)}</small>
+              </p>
+            ))}
+          </div>
         </aside>
       </section>
+      {packageOpen && (
+        <ContentPackageModal
+          asset={asset}
+          brand={workspace.brand}
+          campaign={workspace.campaigns.find(
+            (item) => item.campaign_id === asset.campaign_id,
+          )}
+          generationRun={generationRun}
+          solution={solution}
+          stakeholder={stakeholder}
+          onClose={() => setPackageOpen(false)}
+        />
+      )}
     </>
   );
 }
@@ -1502,10 +1643,14 @@ function Assets({
   workspace: Workspace;
   update: (fn: (value: Workspace) => Workspace, message: string) => void;
 }) {
+  const member = currentMember(workspace);
+  const canReuse = can(workspace, "reuse_content");
+  const canExport = can(workspace, "export_data");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [channel, setChannel] = useState("all");
   const [reuseId, setReuseId] = useState<string | null>(null);
+  const [packageId, setPackageId] = useState<string | null>(null);
   const [reuseContext, setReuseContext] = useState(REUSE_CONTEXTS[0] as string);
   const assets = workspace.assets
     .filter(
@@ -1517,8 +1662,11 @@ function Assets({
           .includes(query.toLowerCase()),
     )
     .slice(0, 60);
+  const packageAsset = packageId
+    ? workspace.assets.find((item) => item.draft_id === packageId)
+    : undefined;
   function confirmReuse() {
-    if (!reuseId) return;
+    if (!reuseId || !canReuse) return;
     update(
       (value) => applyReuse(value, reuseId, reuseContext),
       `内容已复用于“${reuseContext}”。`,
@@ -1530,10 +1678,16 @@ function Assets({
       <Header
         eyebrow="内容资产管理"
         title="内容资产库"
-        description="检索、筛选和复用经过治理的企业内容资产。"
+        description="检索、预览和导出包含长文案、社交成品图与短视频脚本的内容资产。"
         action={
           <button
             className="primary"
+            disabled={!canExport}
+            title={
+              canExport
+                ? undefined
+                : `${ROLE_LABELS[member?.role ?? "creator"]}无导出权限`
+            }
             onClick={() =>
               download(
                 "content_assets.csv",
@@ -1608,7 +1762,7 @@ function Assets({
                   <td data-label="内容资产">
                     <strong>{asset.title}</strong>
                     <small>
-                      {asset.content_type} · V{asset.version}
+                      {asset.content_type} · V{asset.version} · {asset.source_references.length} 条依据
                     </small>
                   </td>
                   <td data-label="活动 / 方案">
@@ -1638,13 +1792,28 @@ function Assets({
                   </td>
                   <td data-label="更新">{formatDate(asset.generated_at)}</td>
                   <td data-label="操作">
-                    <button
-                      className="row-action"
-                      disabled={!reusable}
-                      onClick={() => setReuseId(asset.draft_id)}
-                    >
-                      复用
-                    </button>
+                    <div className="asset-actions">
+                      <button
+                        className="row-action package-action"
+                        onClick={() => setPackageId(asset.draft_id)}
+                      >
+                        内容包
+                      </button>
+                      <button
+                        className="row-action"
+                        disabled={!reusable || !canReuse}
+                        title={
+                          !canReuse
+                            ? `${ROLE_LABELS[member?.role ?? "creator"]}无资产复用权限`
+                            : !reusable
+                              ? "仅已批准或已定稿内容可复用"
+                              : undefined
+                        }
+                        onClick={() => setReuseId(asset.draft_id)}
+                      >
+                        复用
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -1689,6 +1858,25 @@ function Assets({
             </div>
           </div>
         </div>
+      )}
+      {packageAsset && (
+        <ContentPackageModal
+          asset={packageAsset}
+          brand={workspace.brand}
+          campaign={workspace.campaigns.find(
+            (item) => item.campaign_id === packageAsset.campaign_id,
+          )}
+          generationRun={workspace.generation_runs.find(
+            (item) => item.draft_id === packageAsset.draft_id,
+          )}
+          solution={workspace.solutions.find(
+            (item) => item.solution_id === packageAsset.solution_id,
+          )}
+          stakeholder={workspace.stakeholders.find(
+            (item) => item.stakeholder_id === packageAsset.stakeholder_id,
+          )}
+          onClose={() => setPackageId(null)}
+        />
       )}
     </>
   );
@@ -1864,7 +2052,11 @@ function Governance({
   persistence: string;
 }) {
   const [brand, setBrand] = useState<BrandProfile>(workspace.brand);
+  const member = currentMember(workspace);
+  const canManage = can(workspace, "manage_governance");
+  const canExport = can(workspace, "export_data");
   function save() {
+    if (!canManage) return;
     update(
       (value) => ({
         ...value,
@@ -1874,6 +2066,7 @@ function Governance({
     );
   }
   function exportAll() {
+    if (!canExport) return;
     const files = exportFiles(workspace);
     Object.entries(files).forEach(([name, body], index) =>
       setTimeout(() => download(name, body), index * 120),
@@ -1891,7 +2084,16 @@ function Governance({
         title="品牌与治理"
         description="让每一次生成都遵循统一的品牌语气、术语和事实边界。"
         action={
-          <button className="primary" onClick={save}>
+          <button
+            className="primary"
+            disabled={!canManage}
+            title={
+              canManage
+                ? undefined
+                : `${ROLE_LABELS[member?.role ?? "creator"]}无治理配置权限`
+            }
+            onClick={save}
+          >
             保存规则
           </button>
         }
@@ -1910,6 +2112,7 @@ function Governance({
               品牌名称
               <input
                 value={brand.brand_name}
+                disabled={!canManage}
                 onChange={(event) =>
                   setBrand({ ...brand, brand_name: event.target.value })
                 }
@@ -1919,6 +2122,7 @@ function Governance({
               品牌定位
               <input
                 value={brand.positioning}
+                disabled={!canManage}
                 onChange={(event) =>
                   setBrand({ ...brand, positioning: event.target.value })
                 }
@@ -1928,6 +2132,7 @@ function Governance({
               品牌语气（每行一项）
               <textarea
                 value={brand.voice_traits.join("\n")}
+                disabled={!canManage}
                 onChange={(event) =>
                   setBrand({
                     ...brand,
@@ -1944,6 +2149,7 @@ function Governance({
               <span>推荐术语</span>
               <textarea
                 value={brand.preferred_terms.join("\n")}
+                disabled={!canManage}
                 onChange={(event) =>
                   setBrand({
                     ...brand,
@@ -1958,6 +2164,7 @@ function Governance({
               <span>禁用表达</span>
               <textarea
                 value={brand.blocked_terms.join("\n")}
+                disabled={!canManage}
                 onChange={(event) =>
                   setBrand({
                     ...brand,
@@ -1973,11 +2180,49 @@ function Governance({
             必要声明
             <textarea
               value={brand.required_disclaimer}
+              disabled={!canManage}
               onChange={(event) =>
                 setBrand({ ...brand, required_disclaimer: event.target.value })
               }
             />
           </label>
+        </article>
+        <article className="surface">
+          <div className="section-head">
+            <div>
+              <span>权限演示</span>
+              <h2>角色与职责分离</h2>
+            </div>
+          </div>
+          <p className="muted-copy">
+            切换演示角色，验证创作、审核和治理操作是否按权限隔离。此控件用于作品集演示，不代表生产身份认证。
+          </p>
+          <div className="role-switcher">
+            {workspace.members.map((item) => (
+              <button
+                key={item.member_id}
+                className={
+                  workspace.current_member_id === item.member_id ? "active" : ""
+                }
+                onClick={() =>
+                  update(
+                    (value) => ({
+                      ...value,
+                      current_member_id: item.member_id,
+                    }),
+                    `已切换为${ROLE_LABELS[item.role]}演示视角。`,
+                  )
+                }
+              >
+                <span>{item.name.slice(0, 1)}</span>
+                <div>
+                  <strong>{item.name}</strong>
+                  <small>{ROLE_LABELS[item.role]} · {item.title}</small>
+                </div>
+                <b>{workspace.current_member_id === item.member_id ? "当前" : "切换"}</b>
+              </button>
+            ))}
+          </div>
         </article>
         <article className="surface">
           <div className="section-head">
@@ -1989,6 +2234,7 @@ function Governance({
           <label className="radio-card">
             <input
               type="radio"
+              disabled={!canManage}
               checked={workspace.settings.generation_mode === "demo"}
               onChange={() =>
                 update(
@@ -2008,6 +2254,7 @@ function Governance({
           <label className="radio-card">
             <input
               type="radio"
+              disabled={!canManage}
               checked={workspace.settings.generation_mode === "api"}
               onChange={() =>
                 update(
@@ -2031,6 +2278,7 @@ function Governance({
             </span>
             <input
               type="checkbox"
+              disabled={!canManage}
               checked={workspace.settings.default_review_required}
               onChange={(event) =>
                 update(
@@ -2053,6 +2301,13 @@ function Governance({
             </span>
             <small>{persistence}</small>
           </div>
+          <div className="connection-row">
+            <span>
+              <i className="ok" />
+              <strong>提示词版本</strong>
+            </span>
+            <small>{workspace.settings.prompt_version}</small>
+          </div>
         </article>
         <article className="surface">
           <div className="section-head">
@@ -2064,7 +2319,16 @@ function Governance({
           <p className="muted-copy">
             下载活动、品牌、方案、内容、审核和分析记录，用于内部留档或进一步分析。
           </p>
-          <button className="primary full" onClick={exportAll}>
+          <button
+            className="primary full"
+            disabled={!canExport}
+            title={
+              canExport
+                ? undefined
+                : `${ROLE_LABELS[member?.role ?? "creator"]}无导出权限`
+            }
+            onClick={exportAll}
+          >
             导出完整证据包
           </button>
           <div className="export-list">
@@ -2082,6 +2346,32 @@ function Governance({
             <p>
               当前方案、内容和评测记录均为虚构演示数据，不包含真实客户、政府合作或生产数据。
             </p>
+          </div>
+        </article>
+        <article className="surface span-two">
+          <div className="section-head">
+            <div>
+              <span>AI 审计轨迹</span>
+              <h2>最近生成记录</h2>
+            </div>
+            <span className="saved-state">{workspace.generation_runs.length} 次运行</span>
+          </div>
+          <div className="audit-table">
+            {workspace.generation_runs.slice(0, 6).map((run) => {
+              const asset = workspace.assets.find(
+                (item) => item.draft_id === run.draft_id,
+              );
+              return (
+                <div key={run.run_id}>
+                  <span className={`status ${run.status === "fallback" ? "rejected" : "approved"}`}>
+                    {run.status === "fallback" ? "安全回退" : "已完成"}
+                  </span>
+                  <strong>{asset?.title ?? run.draft_id}</strong>
+                  <small>{run.model} · {run.prompt_version}</small>
+                  <b>{Math.max(Math.round(run.duration_ms / 100) / 10, 0.1)}s</b>
+                </div>
+              );
+            })}
           </div>
         </article>
       </section>
@@ -2103,6 +2393,7 @@ export default function Home() {
   const revisionRef = useRef<string | null>(null);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const analytics = useMemo(() => calculateAnalytics(workspace), [workspace]);
+  const member = currentMember(workspace);
   const searchResults = useMemo(() => {
     const query = globalQuery.trim().toLowerCase();
     if (!query) return [];
@@ -2293,10 +2584,10 @@ export default function Home() {
             <Progress value={analytics.compliance_pass_rate} tone="teal" />
           </div>
           <button className="user-card" onClick={() => navigate("governance")}>
-            <span>郑</span>
+            <span>{member?.name.slice(0, 1) ?? "用"}</span>
             <div>
-              <strong>内容运营员</strong>
-              <small>营销技术项目</small>
+              <strong>{member ? ROLE_LABELS[member.role] : "工作区成员"}</strong>
+              <small>{member?.title ?? "营销技术项目"}</small>
             </div>
             <b>设置</b>
           </button>

@@ -2,6 +2,8 @@ import { env } from "cloudflare:workers";
 import { generateDemoCopy } from "../../lib/echoflow";
 import { demoFallbackReason, GenerationRequest, isGenerationRequest } from "../../lib/generation";
 
+const PROMPT_VERSION = "echoflow-cn-v2";
+const DEMO_MODEL = "deterministic-demo-v1";
 
 function extractText(payload: unknown) {
   const response = payload as { output_text?: string; output?: Array<{ content?: Array<{ type?: string; text?: string }> }> };
@@ -22,7 +24,13 @@ export async function POST(request: Request) {
   const runtime = env as unknown as Record<string, string | undefined>;
   const apiKey = runtime.OPENAI_API_KEY;
   const fallbackReason = demoFallbackReason(body.requestedMode, apiKey);
-  if (fallbackReason) return Response.json({ ...demo, mode: "demo", fallbackReason }, { headers: { "cache-control": "no-store" } });
+  if (fallbackReason) return Response.json({
+    ...demo,
+    mode: "demo",
+    model: DEMO_MODEL,
+    promptVersion: PROMPT_VERSION,
+    fallbackReason,
+  }, { headers: { "cache-control": "no-store" } });
 
   const instructions = `你是 EchoFlow 的企业内容策略助手。你的任务是根据经过审核的输入，创作简体中文营销内容。
 必须遵守：只使用输入中的事实；不得虚构统计数据、客户案例、政府合作、生产部署或技术能力；保持品牌语气；避开禁用词；保留必要免责声明；用适合指定渠道和受众的结构表达。`;
@@ -36,12 +44,13 @@ export async function POST(request: Request) {
   });
 
   try {
+    const model = runtime.OPENAI_MODEL || "gpt-5.6-luna";
     const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       signal: AbortSignal.timeout(30_000),
       headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
       body: JSON.stringify({
-        model: runtime.OPENAI_MODEL || "gpt-5.6-luna",
+        model,
         instructions,
         input,
         reasoning: { effort: "low" },
@@ -63,12 +72,31 @@ export async function POST(request: Request) {
         store: false,
       }),
     });
-    if (!response.ok) return Response.json({ ...demo, mode: "demo", fallbackReason: `api_${response.status}` }, { headers: { "cache-control": "no-store" } });
+    if (!response.ok) return Response.json({
+      ...demo,
+      mode: "demo",
+      model: DEMO_MODEL,
+      promptVersion: PROMPT_VERSION,
+      fallbackReason: `api_${response.status}`,
+    }, { headers: { "cache-control": "no-store" } });
     const text = extractText(await response.json());
     const parsed = JSON.parse(text.replace(/^```json\s*|\s*```$/g, "")) as { title?: string; content?: string };
     if (!parsed.title?.trim() || !parsed.content?.trim()) throw new Error("模型输出不完整");
-    return Response.json({ title: parsed.title.trim(), content: parsed.content.trim(), mode: "api" }, { headers: { "cache-control": "no-store" } });
+    return Response.json({
+      title: parsed.title.trim(),
+      content: parsed.content.trim(),
+      mode: "api",
+      model,
+      promptVersion: PROMPT_VERSION,
+      fallbackReason: null,
+    }, { headers: { "cache-control": "no-store" } });
   } catch {
-    return Response.json({ ...demo, mode: "demo", fallbackReason: "api_error" }, { headers: { "cache-control": "no-store" } });
+    return Response.json({
+      ...demo,
+      mode: "demo",
+      model: DEMO_MODEL,
+      promptVersion: PROMPT_VERSION,
+      fallbackReason: "api_error",
+    }, { headers: { "cache-control": "no-store" } });
   }
 }
